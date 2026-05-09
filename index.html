@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Medivex Operations Dashboard</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="site-shell">
+      <header class="app-nav panel-card">
+        <a class="app-nav__brand" href="index.html">
+          <img src="assets/logo.png" alt="Medivex Biotech logo" />
+          <div>
+            <p class="eyebrow">Operations Workspace</p>
+            <strong>Medivex Billing &amp; Orders</strong>
+          </div>
+        </a>
+        <nav class="app-nav__links" aria-label="Primary">
+          <a class="app-nav__link app-nav__link--active" href="index.html">Dashboard</a>
+          <a class="app-nav__link" href="invoice-generator.html">Invoice Generator</a>
+          <a class="app-nav__link" href="supplier-orders.html">Supplier Orders</a>
+        </nav>
+      </header>
+
+      <main class="dashboard-shell">
+        <section class="dashboard-hero">
+          <article class="dashboard-hero__intro panel-card">
+            <div class="dashboard-hero__copy">
+              <p class="eyebrow">Home</p>
+              <h1>Medivex Operations Dashboard</h1>
+              <p class="lede">
+                Start from one place and jump straight into the tools your team is using today.
+                For now, the workspace includes invoice generation and supplier order handling.
+              </p>
+            </div>
+
+            <div class="dashboard-hero__brand">
+              <img src="assets/logo.png" alt="Medivex Biotech logo" />
+              <div>
+                <strong>MEDIVEX BIOTECH</strong>
+                <p>Advancing health, transforming lives.</p>
+              </div>
+            </div>
+          </article>
+
+          <aside class="dashboard-hero__side panel-card">
+            <p class="section-kicker">Workspace Snapshot</p>
+            <div class="dashboard-stats">
+              <article class="dashboard-stat">
+                <span>Active Features</span>
+                <strong>2</strong>
+              </article>
+              <article class="dashboard-stat">
+                <span>Customer Billing</span>
+                <strong>Ready</strong>
+              </article>
+              <article class="dashboard-stat">
+                <span>Supplier Intake</span>
+                <strong>Ready</strong>
+              </article>
+            </div>
+          </aside>
+        </section>
+
+        <section class="dashboard-section">
+          <div class="section-heading">
+            <div>
+              <p class="section-kicker">Features</p>
+              <h2>Choose a workspace</h2>
+            </div>
+          </div>
+
+          <div class="dashboard-grid">
+            <a class="feature-card" href="invoice-generator.html">
+              <div class="feature-card__eyebrow">
+                <span class="feature-card__pill">Finance</span>
+                <strong>01</strong>
+              </div>
+              <h3>Invoice Generator</h3>
+              <p>
+                Create polished customer invoices from the product catalogue, calculate totals
+                automatically, and download a clean PDF.
+              </p>
+              <ul class="feature-card__list">
+                <li>Product dropdown with matched pricing</li>
+                <li>Multiple line items and total calculation</li>
+                <li>Auto due date set to 45 days after invoice date</li>
+              </ul>
+              <span class="feature-card__cta">Open Invoice Generator</span>
+            </a>
+
+            <a class="feature-card feature-card--accent" href="supplier-orders.html">
+              <div class="feature-card__eyebrow">
+                <span class="feature-card__pill">Supply</span>
+                <strong>02</strong>
+              </div>
+              <h3>Supplier Orders</h3>
+              <p>
+                Capture supplier orders with auto-filled unit costs, VAT-inclusive totals, and
+                register entries that can be selected for GRN generation.
+              </p>
+              <ul class="feature-card__list">
+                <li>Supplier and product data loaded from your workbook</li>
+                <li>VAT at 18% and net total calculations</li>
+                <li>Batch select orders for delete and GRN generation</li>
+              </ul>
+              <span class="feature-card__cta">Open Supplier Orders</span>
+            </a>
+          </div>
+        </section>
+      </main>
+    </div>
+  </body>
+</html>

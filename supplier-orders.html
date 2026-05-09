@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Medivex Supplier Orders</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="site-shell">
+      <header class="app-nav panel-card">
+        <a class="app-nav__brand" href="index.html">
+          <img src="assets/logo.png" alt="Medivex Biotech logo" />
+          <div>
+            <p class="eyebrow">Operations Workspace</p>
+            <strong>Medivex Billing &amp; Orders</strong>
+          </div>
+        </a>
+        <nav class="app-nav__links" aria-label="Primary">
+          <a class="app-nav__link" href="index.html">Dashboard</a>
+          <a class="app-nav__link" href="invoice-generator.html">Invoice Generator</a>
+          <a class="app-nav__link app-nav__link--active" href="supplier-orders.html">
+            Supplier Orders
+          </a>
+        </nav>
+      </header>
+
+      <div class="page-shell page-shell--operations">
+        <aside class="panel-card composer-panel">
+          <div class="brand-block">
+            <img class="brand-logo" src="assets/logo.png" alt="Medivex Biotech logo" />
+            <div class="brand-copy">
+              <p class="eyebrow">Supply Desk</p>
+              <h1>Supplier Orders</h1>
+              <p class="lede">
+                Capture supplier orders, pull unit costs directly from the supplier workbook,
+                optionally calculate VAT at 18%, and keep every added order visible in one place.
+              </p>
+            </div>
+          </div>
+
+          <section class="section-card">
+            <div class="section-heading">
+              <div>
+                <p class="section-kicker">Order Details</p>
+                <h2>Supplier and reference</h2>
+              </div>
+            </div>
+
+            <div class="field-grid field-grid--two">
+              <label class="field field--full">
+                <span>Supplier</span>
+                <select id="supplier-name"></select>
+              </label>
+
+              <label class="field">
+                <span>Order Date</span>
+                <input id="supplier-order-date" type="date" />
+              </label>
+
+              <label class="field">
+                <span>Supplier Reference</span>
+                <input
+                  id="supplier-order-reference"
+                  type="text"
+                  placeholder="PO / invoice / delivery note"
+                />
+              </label>
+
+              <div class="field field--full">
+                <span>VAT</span>
+                <label class="toggle-card" for="supplier-vat-enabled">
+                  <input id="supplier-vat-enabled" type="checkbox" />
+                  <div class="toggle-card__copy">
+                    <strong>Include VAT at 18%</strong>
+                    <small>Turn this on only if the supplier invoice includes VAT.</small>
+                  </div>
+                </label>
+              </div>
+            </div>
+
+            <p id="supplier-status" class="field-note">
+              Choose a supplier to load the available products and unit costs.
+            </p>
+          </section>
+
+          <section class="section-card">
+            <div class="section-heading section-heading--inline">
+              <div>
+                <p class="section-kicker">Line Items</p>
+                <h2>Products and quantities</h2>
+              </div>
+              <button id="add-supplier-line" type="button" class="button button--soft">
+                Add Product
+              </button>
+            </div>
+
+            <div id="supplier-line-items" class="order-line-items"></div>
+          </section>
+
+          <section class="summary-band summary-band--four">
+            <article class="summary-card">
+              <span>Active Lines</span>
+              <strong id="supplier-summary-lines">0</strong>
+            </article>
+            <article class="summary-card">
+              <span>Total Qty.</span>
+              <strong id="supplier-summary-quantity">0</strong>
+            </article>
+            <article class="summary-card">
+              <span id="supplier-summary-vat-label">VAT 0% (LKR)</span>
+              <strong id="supplier-summary-vat">0.00</strong>
+            </article>
+            <article class="summary-card">
+              <span id="supplier-summary-net-label">Net Total</span>
+              <strong id="supplier-summary-net">0.00</strong>
+            </article>
+          </section>
+
+          <div class="action-row">
+            <button id="save-supplier-order" type="button" class="button button--primary">
+              Add Supplier Order
+            </button>
+            <button id="reset-supplier-order" type="button" class="button button--ghost">
+              Reset
+            </button>
+          </div>
+        </aside>
+
+        <main class="preview-panel">
+          <div class="preview-toolbar">
+            <div>
+              <p class="section-kicker">Order Register</p>
+              <h2>All added supplier orders</h2>
+            </div>
+            <p class="preview-note">
+              Orders stay visible only for the current page session and clear on reload.
+            </p>
+          </div>
+
+          <section class="orders-panel">
+            <div class="orders-metrics">
+              <article class="summary-card">
+                <span>Orders Added</span>
+                <strong id="orders-count">0</strong>
+              </article>
+              <article class="summary-card">
+                <span>Total Units</span>
+                <strong id="orders-quantity">0</strong>
+              </article>
+              <article class="summary-card">
+                <span>Aggregate Net Total</span>
+                <strong id="orders-net-total">0.00</strong>
+              </article>
+            </div>
+
+            <div class="orders-batch-bar">
+              <div class="orders-batch-bar__summary">
+                <p class="section-kicker">Batch Actions</p>
+                <strong id="selected-orders-count">0 orders selected</strong>
+              </div>
+              <div class="orders-batch-bar__actions">
+                <button id="select-all-orders" type="button" class="button button--soft">
+                  Select All
+                </button>
+                <button id="clear-selected-orders" type="button" class="button button--ghost">
+                  Clear
+                </button>
+                <button id="delete-selected-orders" type="button" class="button button--ghost">
+                  Delete Selected
+                </button>
+                <button id="generate-selected-grn" type="button" class="button button--primary">
+                  Generate GRN
+                </button>
+                <button
+                  id="generate-selected-po"
+                  type="button"
+                  class="button button--ghost"
+                  disabled
+                >
+                  Generate PO
+                </button>
+              </div>
+            </div>
+
+            <div id="supplier-orders-list" class="orders-list"></div>
+          </section>
+        </main>
+      </div>
+    </div>
+
+    <script src="supplier-data.js"></script>
+    <script src="grn-template-data.js"></script>
+    <script src="assets/vendor/pdf-lib.min.js"></script>
+    <script src="supplier-orders.js"></script>
+  </body>
+</html>
