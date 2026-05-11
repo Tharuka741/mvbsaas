@@ -22,7 +22,7 @@
           <a class="app-nav__link app-nav__link--active" href="supplier-orders.html">
             Supplier Orders
           </a>
-          <a class="app-nav__link" href="product-dashboard.html">Price Manager</a>
+          <a class="app-nav__link" href="product-dashboard.html">Manager</a>
         </nav>
       </header>
 
@@ -196,7 +196,7 @@
     <script src="grn-template-data.js"></script>
     <script src="assets/vendor/pdf-lib.min.js"></script>
     <script>
-      window.MVB_PRICE_STORE.initSupplierCosts().finally(function () {
+      window.MVB_PRICE_STORE.initProducts().finally(function () {
         var s = document.createElement('script');
         s.src = 'supplier-orders.js';
         document.body.appendChild(s);

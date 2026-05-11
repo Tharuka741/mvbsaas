@@ -22,7 +22,7 @@
             Invoice Generator
           </a>
           <a class="app-nav__link" href="supplier-orders.html">Supplier Orders</a>
-          <a class="app-nav__link" href="product-dashboard.html">Price Manager</a>
+          <a class="app-nav__link" href="product-dashboard.html">Manager</a>
         </nav>
       </header>
 
@@ -243,7 +243,7 @@
     <script src="logo-data.js"></script>
     <script src="assets/vendor/pdf-lib.min.js"></script>
     <script>
-      window.MVB_PRICE_STORE.initInvoicePrices().finally(function () {
+      window.MVB_PRICE_STORE.initProducts().finally(function () {
         var s = document.createElement('script');
         s.src = 'app.js';
         document.body.appendChild(s);

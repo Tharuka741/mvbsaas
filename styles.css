@@ -1721,3 +1721,106 @@ button {
   color: var(--ink-soft);
   font-size: 0.9rem;
 }
+
+.pdash-cell-input {
+  width: 100%;
+  padding: 6px 10px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--ink);
+  font-size: 0.9rem;
+  transition:
+    border-color 120ms ease,
+    background 120ms ease,
+    box-shadow 120ms ease;
+}
+
+.pdash-cell-input:hover {
+  border-color: var(--line);
+  background: rgba(247, 250, 255, 0.92);
+}
+
+.pdash-cell-input:focus {
+  outline: none;
+  border-color: rgba(21, 71, 150, 0.45);
+  background: rgba(247, 250, 255, 0.92);
+  box-shadow: 0 0 0 3px rgba(21, 71, 150, 0.09);
+}
+
+.pdash-cell-input--num {
+  text-align: right;
+}
+
+.pdash-delete-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--ink-soft);
+  font-size: 0.95rem;
+  opacity: 0;
+  transition:
+    opacity 120ms ease,
+    background 120ms ease,
+    color 120ms ease;
+}
+
+.pdash-table tbody tr:hover .pdash-delete-btn {
+  opacity: 1;
+}
+
+.pdash-delete-btn:hover {
+  background: rgba(220, 38, 38, 0.1);
+  color: #dc2626;
+}
+
+.pdash-new-row td {
+  background: rgba(21, 71, 150, 0.03);
+  border-bottom: 2px solid rgba(21, 71, 150, 0.12) !important;
+}
+
+.pdash-row-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.pdash-add-confirm-btn {
+  padding: 5px 14px;
+  border: none;
+  border-radius: 8px;
+  background: linear-gradient(135deg, var(--brand), var(--brand-strong));
+  color: #ffffff;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 160ms ease;
+}
+
+.pdash-add-confirm-btn:hover {
+  opacity: 0.88;
+}
+
+.pdash-cancel-add-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 7px;
+  background: rgba(19, 32, 65, 0.07);
+  color: var(--ink-soft);
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: background 120ms ease;
+}
+
+.pdash-cancel-add-btn:hover {
+  background: rgba(19, 32, 65, 0.13);
+}

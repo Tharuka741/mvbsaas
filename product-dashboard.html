@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Price Manager — Medivex</title>
+    <title>Manager — Medivex</title>
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
@@ -20,68 +20,47 @@
           <a class="app-nav__link" href="index.html">Dashboard</a>
           <a class="app-nav__link" href="invoice-generator.html">Invoice Generator</a>
           <a class="app-nav__link" href="supplier-orders.html">Supplier Orders</a>
-          <a class="app-nav__link app-nav__link--active" href="product-dashboard.html">Price Manager</a>
+          <a class="app-nav__link app-nav__link--active" href="product-dashboard.html">Manager</a>
         </nav>
       </header>
 
       <div class="pdash-shell">
-        <!-- Page header -->
         <div class="pdash-header">
           <div class="pdash-header__copy">
-            <p class="eyebrow">Pricing</p>
-            <h1>Price Manager</h1>
-            <p>Edit invoice prices and supplier costs. Changes take effect across the app immediately.</p>
+            <p class="eyebrow">Products</p>
+            <h1>Manager</h1>
+            <p>Add, edit and delete products. Changes sync across the app immediately.</p>
           </div>
           <div class="pdash-header__actions">
-            <button class="pdash-btn pdash-btn--ghost" id="btn-reset">Reset All to Defaults</button>
+            <button class="pdash-btn pdash-btn--ghost" id="btn-add">+ Add Product</button>
             <button class="pdash-btn pdash-btn--primary" id="btn-save">Save Changes</button>
           </div>
         </div>
 
-        <!-- Tables panel -->
         <div class="pdash-panel">
           <div class="pdash-toolbar">
-            <div class="pdash-tab-group">
-              <button class="pdash-tab pdash-tab--active" data-tab="invoice">Invoice Prices</button>
-              <button class="pdash-tab" data-tab="supplier">Supplier Costs</button>
-            </div>
-            <input class="pdash-search" id="pdash-search" type="search" placeholder="Filter products…" autocomplete="off" />
-            <div class="pdash-toolbar__spacer"></div>
+            <input
+              class="pdash-search"
+              id="pdash-search"
+              type="search"
+              placeholder="Filter by product or supplier…"
+              autocomplete="off"
+            />
           </div>
 
-          <!-- Invoice Prices -->
-          <div class="pdash-tab-content" data-tab="invoice">
-            <div class="pdash-table-wrap">
-              <table class="pdash-table">
-                <thead>
-                  <tr>
-                    <th>Product Name</th>
-                    <th>Default Price</th>
-                    <th>Current Price (Rs.)</th>
-                    <th>Status</th>
-                  </tr>
-                </thead>
-                <tbody id="invoice-tbody"></tbody>
-              </table>
-            </div>
-          </div>
-
-          <!-- Supplier Costs -->
-          <div class="pdash-tab-content pdash-tab-content--hidden" data-tab="supplier">
-            <div class="pdash-table-wrap">
-              <table class="pdash-table">
-                <thead>
-                  <tr>
-                    <th>Supplier</th>
-                    <th>Product</th>
-                    <th>Default Cost</th>
-                    <th>Current Cost (Rs.)</th>
-                    <th>Status</th>
-                  </tr>
-                </thead>
-                <tbody id="supplier-tbody"></tbody>
-              </table>
-            </div>
+          <div class="pdash-table-wrap">
+            <table class="pdash-table">
+              <thead>
+                <tr>
+                  <th>Supplier</th>
+                  <th>Product</th>
+                  <th>Cost (Rs.)</th>
+                  <th>Price (Rs.)</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="products-tbody"></tbody>
+            </table>
           </div>
         </div>
       </div>
@@ -93,26 +72,21 @@
     <script src="supabase-config.js"></script>
     <script>
       (function () {
+        var db = window.MVB_DB;
         var store = window.MVB_PRICE_STORE;
 
-        // Populated after Supabase init resolves
-        var baseProducts = [];   // hard-coded JS defaults
-        var baseSupplier = [];   // hard-coded JS defaults
-        var currentInvoice = {}; // {name: price} — what's currently in DB / being edited
-        var currentSupplier = {}; // {"supplier|product": cost}
-
+        var allProducts = [];
+        var pendingUpdates = {}; // { id: { supplier, name, unit_cost, unit_price } }
         var searchQuery = '';
+        var addingNew = false;
 
-        var invoiceTbody = document.getElementById('invoice-tbody');
-        var supplierTbody = document.getElementById('supplier-tbody');
+        var tbody = document.getElementById('products-tbody');
         var searchInput = document.getElementById('pdash-search');
         var btnSave = document.getElementById('btn-save');
-        var btnReset = document.getElementById('btn-reset');
-        var tabs = document.querySelectorAll('.pdash-tab');
-        var tabContents = document.querySelectorAll('.pdash-tab-content');
+        var btnAdd = document.getElementById('btn-add');
 
         function esc(str) {
-          return String(str)
+          return String(str == null ? '' : str)
             .replace(/&/g, '&amp;')
             .replace(/</g, '&lt;')
             .replace(/>/g, '&gt;')
@@ -120,161 +94,192 @@
         }
 
         function fmt(val) {
-          return Number(val).toFixed(2);
+          return val !== null && val !== undefined && val !== '' ? Number(val).toFixed(2) : '';
         }
 
-        function isModifiedInvoice(name, currentVal) {
-          var base = baseProducts.find(function (p) { return p.name === name; });
-          return base && Math.abs(Number(currentVal) - base.unitPrice) > 0.001;
+        function get(id, field, fallback) {
+          return pendingUpdates[id] && Object.prototype.hasOwnProperty.call(pendingUpdates[id], field)
+            ? pendingUpdates[id][field]
+            : fallback;
         }
 
-        function isModifiedSupplier(key, currentVal) {
-          var parts = key.split('|');
-          var base = baseSupplier.find(function (p) {
-            return p.supplier === parts[0] && p.product === parts.slice(1).join('|');
-          });
-          return base && Math.abs(Number(currentVal) - base.unitCost) > 0.001;
-        }
+        // ── Render ────────────────────────────────────────────────
 
-        function renderInvoice() {
+        function render() {
           var q = searchQuery.toLowerCase();
-          var sorted = baseProducts.slice().sort(function (a, b) {
-            return a.name.localeCompare(b.name);
+          var filtered = allProducts.filter(function (p) {
+            return (
+              !q ||
+              (p.name && p.name.toLowerCase().indexOf(q) !== -1) ||
+              (p.supplier && p.supplier.toLowerCase().indexOf(q) !== -1)
+            );
           });
-          var html = '';
-          var shown = 0;
 
-          for (var i = 0; i < sorted.length; i++) {
-            var p = sorted[i];
-            if (q && p.name.toLowerCase().indexOf(q) === -1) continue;
-            shown++;
-            var currentVal = currentInvoice[p.name] !== undefined ? currentInvoice[p.name] : p.unitPrice;
-            var modified = Math.abs(Number(currentVal) - p.unitPrice) > 0.001;
+          var html = '';
+
+          if (addingNew) {
             html +=
-              '<tr class="' + (modified ? 'is-modified' : '') + '">' +
-              '<td>' + esc(p.name) + '</td>' +
-              '<td>Rs. ' + fmt(p.unitPrice) + '</td>' +
-              '<td><input class="pdash-price-input' + (modified ? ' is-changed' : '') + '"' +
-              ' type="number" min="0" step="0.01"' +
-              ' value="' + fmt(currentVal) + '"' +
-              ' data-default="' + p.unitPrice + '"' +
-              ' data-product="' + esc(p.name) + '"' +
-              ' data-type="invoice"></td>' +
-              '<td><span class="pdash-badge ' + (modified ? 'pdash-badge--modified' : 'pdash-badge--default') + '">' +
-              (modified ? 'Modified' : 'Default') + '</span></td>' +
+              '<tr class="pdash-new-row" id="new-product-row">' +
+              '<td><input class="pdash-cell-input" id="new-supplier" type="text" placeholder="Supplier (optional)" autocomplete="off"></td>' +
+              '<td><input class="pdash-cell-input" id="new-name" type="text" placeholder="Product name *" autocomplete="off"></td>' +
+              '<td><input class="pdash-cell-input pdash-cell-input--num" id="new-cost" type="number" min="0" step="0.01" placeholder="—"></td>' +
+              '<td><input class="pdash-cell-input pdash-cell-input--num" id="new-price" type="number" min="0" step="0.01" placeholder="—"></td>' +
+              '<td><div class="pdash-row-actions">' +
+              '<button class="pdash-add-confirm-btn" id="confirm-add">Add</button>' +
+              '<button class="pdash-cancel-add-btn" id="cancel-add">&#x2715;</button>' +
+              '</div></td>' +
               '</tr>';
           }
 
-          if (shown === 0) {
-            html = '<tr><td colspan="4" class="pdash-empty">No products match your search.</td></tr>';
-          }
+          for (var i = 0; i < filtered.length; i++) {
+            var p = filtered[i];
+            var dirty = !!pendingUpdates[p.id];
+            var supplier = get(p.id, 'supplier', p.supplier);
+            var name = get(p.id, 'name', p.name);
+            var cost = get(p.id, 'unit_cost', p.unit_cost);
+            var price = get(p.id, 'unit_price', p.unit_price);
 
-          invoiceTbody.innerHTML = html;
-          attachListeners(invoiceTbody);
-        }
-
-        function renderSupplier() {
-          var q = searchQuery.toLowerCase();
-          var sorted = baseSupplier.slice().sort(function (a, b) {
-            var sc = a.supplier.localeCompare(b.supplier);
-            return sc !== 0 ? sc : a.product.localeCompare(b.product);
-          });
-          var html = '';
-          var shown = 0;
-
-          for (var i = 0; i < sorted.length; i++) {
-            var p = sorted[i];
-            if (q && p.supplier.toLowerCase().indexOf(q) === -1 && p.product.toLowerCase().indexOf(q) === -1) continue;
-            shown++;
-            var k = p.supplier + '|' + p.product;
-            var currentVal = currentSupplier[k] !== undefined ? currentSupplier[k] : p.unitCost;
-            var modified = Math.abs(Number(currentVal) - p.unitCost) > 0.001;
             html +=
-              '<tr class="' + (modified ? 'is-modified' : '') + '">' +
-              '<td>' + esc(p.supplier) + '</td>' +
-              '<td>' + esc(p.product) + '</td>' +
-              '<td>Rs. ' + fmt(p.unitCost) + '</td>' +
-              '<td><input class="pdash-price-input' + (modified ? ' is-changed' : '') + '"' +
-              ' type="number" min="0" step="0.01"' +
-              ' value="' + fmt(currentVal) + '"' +
-              ' data-default="' + p.unitCost + '"' +
-              ' data-key="' + esc(k) + '"' +
-              ' data-type="supplier"></td>' +
-              '<td><span class="pdash-badge ' + (modified ? 'pdash-badge--modified' : 'pdash-badge--default') + '">' +
-              (modified ? 'Modified' : 'Default') + '</span></td>' +
+              '<tr class="' + (dirty ? 'is-modified' : '') + '" data-id="' + p.id + '">' +
+              '<td><input class="pdash-cell-input" type="text" value="' + esc(supplier) + '" data-field="supplier" placeholder="—" autocomplete="off"></td>' +
+              '<td><input class="pdash-cell-input" type="text" value="' + esc(name) + '" data-field="name" placeholder="Product name" autocomplete="off"></td>' +
+              '<td><input class="pdash-cell-input pdash-cell-input--num" type="number" min="0" step="0.01" value="' + fmt(cost) + '" data-field="unit_cost" placeholder="—"></td>' +
+              '<td><input class="pdash-cell-input pdash-cell-input--num" type="number" min="0" step="0.01" value="' + fmt(price) + '" data-field="unit_price" placeholder="—"></td>' +
+              '<td><button class="pdash-delete-btn" data-id="' + p.id + '" title="Delete">&#x2715;</button></td>' +
               '</tr>';
           }
 
-          if (shown === 0) {
-            html = '<tr><td colspan="5" class="pdash-empty">No products match your search.</td></tr>';
+          if (!addingNew && filtered.length === 0) {
+            html = '<tr><td colspan="5" class="pdash-empty">No products found.</td></tr>';
           }
 
-          supplierTbody.innerHTML = html;
-          attachListeners(supplierTbody);
+          tbody.innerHTML = html;
+          attachListeners();
         }
 
-        function attachListeners(tbody) {
-          tbody.querySelectorAll('.pdash-price-input').forEach(function (input) {
-            input.addEventListener('input', onPriceInput);
+        // ── Listeners ─────────────────────────────────────────────
+
+        function attachListeners() {
+          tbody.querySelectorAll('[data-field]').forEach(function (input) {
+            input.addEventListener('input', onCellInput);
           });
+
+          tbody.querySelectorAll('.pdash-delete-btn').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+              deleteProduct(parseInt(this.dataset.id));
+            });
+          });
+
+          var confirmBtn = document.getElementById('confirm-add');
+          var cancelBtn = document.getElementById('cancel-add');
+          if (confirmBtn) confirmBtn.addEventListener('click', confirmAdd);
+          if (cancelBtn) cancelBtn.addEventListener('click', cancelAdd);
+
+          var newRow = document.getElementById('new-product-row');
+          if (newRow) {
+            newRow.querySelectorAll('input').forEach(function (input) {
+              input.addEventListener('keydown', function (e) {
+                if (e.key === 'Enter') confirmAdd();
+                if (e.key === 'Escape') cancelAdd();
+              });
+            });
+            var nameInput = document.getElementById('new-name');
+            if (nameInput) setTimeout(function () { nameInput.focus(); }, 0);
+          }
         }
 
-        function onPriceInput() {
-          var val = parseFloat(this.value);
-          if (isNaN(val)) return;
+        function onCellInput() {
           var row = this.closest('tr');
-          var badge = row.querySelector('.pdash-badge');
-          var def = parseFloat(this.dataset.default);
-          var modified = Math.abs(val - def) > 0.001;
+          var id = parseInt(row.dataset.id);
+          var field = this.dataset.field;
 
-          if (this.dataset.type === 'invoice') {
-            currentInvoice[this.dataset.product] = val;
-          } else {
-            currentSupplier[this.dataset.key] = val;
+          if (!pendingUpdates[id]) {
+            var p = allProducts.find(function (p) { return p.id === id; });
+            pendingUpdates[id] = {
+              supplier: p.supplier,
+              name: p.name,
+              unit_cost: p.unit_cost,
+              unit_price: p.unit_price,
+            };
           }
 
-          this.classList.toggle('is-changed', modified);
-          row.classList.toggle('is-modified', modified);
-          badge.className = 'pdash-badge ' + (modified ? 'pdash-badge--modified' : 'pdash-badge--default');
-          badge.textContent = modified ? 'Modified' : 'Default';
+          pendingUpdates[id][field] = this.type === 'number'
+            ? (this.value === '' ? null : parseFloat(this.value))
+            : this.value;
+
+          row.classList.add('is-modified');
         }
 
-        // Tab switching
-        tabs.forEach(function (tab) {
-          tab.addEventListener('click', function () {
-            var target = this.dataset.tab;
-            tabs.forEach(function (t) { t.classList.toggle('pdash-tab--active', t.dataset.tab === target); });
-            tabContents.forEach(function (c) { c.classList.toggle('pdash-tab-content--hidden', c.dataset.tab !== target); });
-          });
-        });
+        // ── Add ───────────────────────────────────────────────────
 
-        // Search
-        searchInput.addEventListener('input', function () {
-          searchQuery = this.value;
-          renderInvoice();
-          renderSupplier();
-        });
+        function cancelAdd() {
+          addingNew = false;
+          render();
+        }
 
-        // Save — collect every input's current value and upsert to Supabase
-        btnSave.addEventListener('click', async function () {
+        async function confirmAdd() {
+          var nameInput = document.getElementById('new-name');
+          if (!nameInput) return;
+          var name = nameInput.value.trim();
+          if (!name) { nameInput.focus(); return; }
+
+          var supplier = (document.getElementById('new-supplier').value || '').trim() || null;
+          var costVal = document.getElementById('new-cost').value;
+          var priceVal = document.getElementById('new-price').value;
+
+          var result = await db.from('products').insert([{
+            supplier: supplier,
+            name: name,
+            unit_cost: costVal ? parseFloat(costVal) : null,
+            unit_price: priceVal ? parseFloat(priceVal) : null,
+          }]).select();
+
+          if (result.error) { alert('Failed to add product. Please try again.'); return; }
+
+          allProducts.unshift(result.data[0]);
+          addingNew = false;
+          render();
+        }
+
+        // ── Delete ────────────────────────────────────────────────
+
+        async function deleteProduct(id) {
+          if (!confirm('Delete this product? This cannot be undone.')) return;
+
+          var result = await db.from('products').delete().eq('id', id);
+          if (result.error) { alert('Failed to delete. Please try again.'); return; }
+
+          allProducts = allProducts.filter(function (p) { return p.id !== id; });
+          delete pendingUpdates[id];
+          render();
+        }
+
+        // ── Save ──────────────────────────────────────────────────
+
+        async function save() {
+          var ids = Object.keys(pendingUpdates);
+          if (!ids.length) return;
+
           btnSave.disabled = true;
           btnSave.textContent = 'Saving…';
 
-          var invoiceRows = Object.entries(currentInvoice).map(function (entry) {
-            return { name: entry[0], unit_price: entry[1] };
-          });
-
-          var supplierRows = Object.entries(currentSupplier).map(function (entry) {
-            var parts = entry[0].split('|');
-            return { supplier: parts[0], product: parts.slice(1).join('|'), unit_cost: entry[1] };
-          });
-
-          var results = await Promise.all([
-            invoiceRows.length ? store.saveAllInvoicePrices(invoiceRows) : Promise.resolve({}),
-            supplierRows.length ? store.saveAllSupplierCosts(supplierRows) : Promise.resolve({}),
-          ]);
+          var results = await Promise.all(
+            ids.map(function (id) {
+              return db.from('products')
+                .update(Object.assign({}, pendingUpdates[parseInt(id)], { updated_at: new Date().toISOString() }))
+                .eq('id', parseInt(id));
+            })
+          );
 
           var hasError = results.some(function (r) { return r && r.error; });
+
+          if (!hasError) {
+            ids.forEach(function (id) {
+              var idx = allProducts.findIndex(function (p) { return p.id === parseInt(id); });
+              if (idx !== -1) Object.assign(allProducts[idx], pendingUpdates[parseInt(id)]);
+            });
+            pendingUpdates = {};
+          }
 
           btnSave.disabled = false;
           btnSave.textContent = hasError ? 'Error — try again' : 'Saved!';
@@ -282,62 +287,42 @@
           setTimeout(function () {
             btnSave.textContent = 'Save Changes';
             btnSave.classList.remove('pdash-btn--saved');
-          }, 1800);
+            if (!hasError) render();
+          }, 1500);
+        }
+
+        // ── Toolbar events ────────────────────────────────────────
+
+        searchInput.addEventListener('input', function () {
+          searchQuery = this.value;
+          render();
         });
 
-        // Reset — re-seed Supabase from JS file defaults
-        btnReset.addEventListener('click', async function () {
-          if (!confirm('Reset all prices to the original hard-coded defaults? This cannot be undone.')) return;
+        btnSave.addEventListener('click', save);
 
-          btnReset.disabled = true;
-          btnReset.textContent = 'Resetting…';
-
-          var invoiceRows = baseProducts.map(function (p) {
-            return { name: p.name, unit_price: p.unitPrice };
-          });
-          var supplierRows = baseSupplier.map(function (p) {
-            return { supplier: p.supplier, product: p.product, unit_cost: p.unitCost };
-          });
-
-          await Promise.all([
-            store.saveAllInvoicePrices(invoiceRows),
-            store.saveAllSupplierCosts(supplierRows),
-          ]);
-
-          // Rebuild currentInvoice / currentSupplier from defaults
-          currentInvoice = {};
-          baseProducts.forEach(function (p) { currentInvoice[p.name] = p.unitPrice; });
-          currentSupplier = {};
-          baseSupplier.forEach(function (p) { currentSupplier[p.supplier + '|' + p.product] = p.unitCost; });
-
-          btnReset.disabled = false;
-          btnReset.textContent = 'Reset All to Defaults';
-          renderInvoice();
-          renderSupplier();
+        btnAdd.addEventListener('click', function () {
+          addingNew = true;
+          render();
+          tbody.closest('.pdash-table-wrap').scrollTop = 0;
         });
 
         // ── Init ──────────────────────────────────────────────────
 
-        invoiceTbody.innerHTML = '<tr><td colspan="4" class="pdash-empty">Loading prices…</td></tr>';
-        supplierTbody.innerHTML = '<tr><td colspan="5" class="pdash-empty">Loading prices…</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="5" class="pdash-empty">Loading…</td></tr>';
 
-        Promise.all([
-          store.initInvoicePrices(),
-          store.initSupplierCosts(),
-        ]).finally(function () {
-          baseProducts = window.MVB_BASE_PRODUCTS || [];
-          baseSupplier = (window.MVB_BASE_SUPPLIER || {}).products || [];
-
-          // currentInvoice = what the DB returned (already applied to MEDIVEX_PRODUCTS)
-          (window.MEDIVEX_PRODUCTS || []).forEach(function (p) {
-            currentInvoice[p.name] = p.unitPrice;
-          });
-          ((window.MEDIVEX_SUPPLIER_DIRECTORY || {}).products || []).forEach(function (p) {
-            currentSupplier[p.supplier + '|' + p.product] = p.unitCost;
-          });
-
-          renderInvoice();
-          renderSupplier();
+        store.initProducts().finally(function () {
+          db.from('products')
+            .select('*')
+            .order('supplier', { nullsFirst: false })
+            .order('name')
+            .then(function (result) {
+              if (result.error || !result.data) {
+                tbody.innerHTML = '<tr><td colspan="5" class="pdash-empty">Failed to load. Please refresh.</td></tr>';
+                return;
+              }
+              allProducts = result.data;
+              render();
+            });
         });
       })();
     </script>

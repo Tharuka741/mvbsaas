@@ -2,107 +2,90 @@
   var SUPABASE_URL = 'https://slshvvchabaohxsdnehe.supabase.co';
   var SUPABASE_KEY = 'sb_publishable_rbo_z0EqMsbXJ3GxKylDMQ_rIuyfSis';
 
-  // supabase-js loaded via CDN before this script
   var db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-  // ── Invoice prices ────────────────────────────────────────────
+  // Merge products.js + supplier-data.js into unified rows for first-run seeding
+  function buildSeedRows() {
+    var invProducts = window.MEDIVEX_PRODUCTS || [];
+    var supProducts = ((window.MEDIVEX_SUPPLIER_DIRECTORY || {}).products) || [];
 
-  async function initInvoicePrices() {
-    if (!window.MEDIVEX_PRODUCTS) return;
+    var invPriceMap = {};
+    invProducts.forEach(function (p) { invPriceMap[p.name] = p.unitPrice; });
 
-    // Snapshot the hard-coded defaults so the Price Manager can show them
-    window.MVB_BASE_PRODUCTS = window.MEDIVEX_PRODUCTS.map(function (p) {
-      return { name: p.name, unitPrice: p.unitPrice };
+    var rows = [];
+    var seen = {};
+
+    supProducts.forEach(function (p) {
+      rows.push({
+        supplier: p.supplier,
+        name: p.product,
+        unit_cost: p.unitCost,
+        unit_price: invPriceMap[p.product] !== undefined ? invPriceMap[p.product] : null,
+      });
+      seen[p.product] = true;
     });
 
-    var result = await db.from('invoice_prices').select('name, unit_price');
-
-    if (result.error) return; // Network issue — keep JS file defaults
-
-    if (result.data.length === 0) {
-      // First run: seed the table from products.js
-      await db.from('invoice_prices').insert(
-        window.MEDIVEX_PRODUCTS.map(function (p) {
-          return { name: p.name, unit_price: p.unitPrice };
-        })
-      );
-      return; // Defaults are already loaded in window.MEDIVEX_PRODUCTS
-    }
-
-    // Apply DB prices to the window global (app.js reads this next)
-    var priceMap = {};
-    result.data.forEach(function (r) {
-      priceMap[r.name] = Number(r.unit_price);
+    invProducts.forEach(function (p) {
+      if (!seen[p.name]) {
+        rows.push({ supplier: null, name: p.name, unit_cost: null, unit_price: p.unitPrice });
+      }
     });
 
-    window.MEDIVEX_PRODUCTS = window.MEDIVEX_PRODUCTS.map(function (p) {
-      return priceMap[p.name] !== undefined
-        ? Object.assign({}, p, { unitPrice: priceMap[p.name] })
-        : p;
-    });
+    return rows;
   }
 
-  // ── Supplier costs ────────────────────────────────────────────
+  // Apply DB product rows back to the window globals app.js / supplier-orders.js read
+  function applyToGlobals(dbRows) {
+    var invMap = {};   // name → unit_price
+    var supMap = {};   // "supplier|name" → unit_cost
 
-  async function initSupplierCosts() {
+    dbRows.forEach(function (r) {
+      if (r.unit_price != null) invMap[r.name] = Number(r.unit_price);
+      if (r.unit_cost != null && r.supplier) supMap[r.supplier + '|' + r.name] = Number(r.unit_cost);
+    });
+
+    if (window.MEDIVEX_PRODUCTS) {
+      window.MEDIVEX_PRODUCTS = window.MEDIVEX_PRODUCTS.map(function (p) {
+        return invMap[p.name] !== undefined
+          ? Object.assign({}, p, { unitPrice: invMap[p.name] })
+          : p;
+      });
+    }
+
     var dir = window.MEDIVEX_SUPPLIER_DIRECTORY;
-    if (!dir || !dir.products) return;
+    if (dir && dir.products) {
+      window.MEDIVEX_SUPPLIER_DIRECTORY = Object.assign({}, dir, {
+        products: dir.products.map(function (p) {
+          var k = p.supplier + '|' + p.product;
+          return supMap[k] !== undefined
+            ? Object.assign({}, p, { unitCost: supMap[k] })
+            : p;
+        }),
+      });
+    }
+  }
 
-    window.MVB_BASE_SUPPLIER = {
-      products: dir.products.map(function (p) {
-        return { supplier: p.supplier, product: p.product, unitCost: p.unitCost };
-      }),
-    };
+  async function initProducts() {
+    var result = await db.from('products').select('id, supplier, name, unit_cost, unit_price');
 
-    var result = await db.from('supplier_costs').select('supplier, product, unit_cost');
-
-    if (result.error) return;
+    if (result.error) return; // network issue — keep JS file defaults
 
     if (result.data.length === 0) {
-      await db.from('supplier_costs').insert(
-        dir.products.map(function (p) {
-          return { supplier: p.supplier, product: p.product, unit_cost: p.unitCost };
-        })
-      );
+      // First run: seed from the JS files then return (defaults already in window globals)
+      var rows = buildSeedRows();
+      if (rows.length) await db.from('products').insert(rows);
       return;
     }
 
-    var costMap = {};
-    result.data.forEach(function (r) {
-      costMap[r.supplier + '|' + r.product] = Number(r.unit_cost);
-    });
-
-    window.MEDIVEX_SUPPLIER_DIRECTORY = Object.assign({}, dir, {
-      products: dir.products.map(function (p) {
-        var k = p.supplier + '|' + p.product;
-        return costMap[k] !== undefined
-          ? Object.assign({}, p, { unitCost: costMap[k] })
-          : p;
-      }),
-    });
+    applyToGlobals(result.data);
   }
-
-  // ── Public API ────────────────────────────────────────────────
 
   window.MVB_DB = db;
 
   window.MVB_PRICE_STORE = {
-    initInvoicePrices: initInvoicePrices,
-    initSupplierCosts: initSupplierCosts,
+    initProducts: initProducts,
 
-    // Upsert the full invoice price list (used by Price Manager on save)
-    saveAllInvoicePrices: function (rows) {
-      // rows: [{ name, unit_price }, ...]
-      return db.from('invoice_prices').upsert(rows, { onConflict: 'name' });
-    },
-
-    // Upsert the full supplier cost list (used by Price Manager on save)
-    saveAllSupplierCosts: function (rows) {
-      // rows: [{ supplier, product, unit_cost }, ...]
-      return db.from('supplier_costs').upsert(rows, { onConflict: 'supplier,product' });
-    },
-
-    // Save a completed invoice + its line items (called on PDF download)
+    // Save a completed invoice + line items when the PDF is downloaded
     saveInvoice: async function (invoice, lineItems) {
       var invResult = await db
         .from('invoices')
@@ -112,7 +95,6 @@
       if (invResult.error || !invResult.data || !invResult.data.length) return;
 
       var invoiceId = invResult.data[0].id;
-
       await db.from('invoice_line_items').delete().eq('invoice_id', invoiceId);
       await db.from('invoice_line_items').insert(
         lineItems.map(function (item) {
