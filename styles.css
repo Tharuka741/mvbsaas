@@ -1722,6 +1722,26 @@ button {
   font-size: 0.9rem;
 }
 
+.pdash-th-sort {
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+  transition: color 120ms ease;
+}
+
+.pdash-th-sort:hover {
+  color: var(--brand);
+}
+
+.pdash-th-sort--active {
+  color: var(--brand);
+}
+
+.pdash-sort-icon {
+  font-style: normal;
+  opacity: 0.8;
+}
+
 .pdash-cell-input {
   width: 100%;
   padding: 6px 10px;

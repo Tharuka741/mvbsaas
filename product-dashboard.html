@@ -52,10 +52,10 @@
             <table class="pdash-table">
               <thead>
                 <tr>
-                  <th>Supplier</th>
-                  <th>Product</th>
-                  <th>Cost (Rs.)</th>
-                  <th>Price (Rs.)</th>
+                  <th class="pdash-th-sort" data-sort="supplier">Supplier <span class="pdash-sort-icon"></span></th>
+                  <th class="pdash-th-sort" data-sort="name">Product <span class="pdash-sort-icon"></span></th>
+                  <th class="pdash-th-sort" data-sort="unit_cost">Cost (Rs.) <span class="pdash-sort-icon"></span></th>
+                  <th class="pdash-th-sort" data-sort="unit_price">Price (Rs.) <span class="pdash-sort-icon"></span></th>
                   <th></th>
                 </tr>
               </thead>
@@ -79,6 +79,8 @@
         var pendingUpdates = {}; // { id: { supplier, name, unit_cost, unit_price } }
         var searchQuery = '';
         var addingNew = false;
+        var sortField = 'supplier';
+        var sortDir = 'asc';
 
         var tbody = document.getElementById('products-tbody');
         var searchInput = document.getElementById('pdash-search');
@@ -103,17 +105,49 @@
             : fallback;
         }
 
+        // ── Sort helpers ──────────────────────────────────────────
+
+        function sortValue(p, field) {
+          var v = p[field];
+          return v == null ? null : v;
+        }
+
+        function sortRows(rows) {
+          return rows.slice().sort(function (a, b) {
+            var av = sortValue(a, sortField);
+            var bv = sortValue(b, sortField);
+            // Nulls always last
+            if (av == null && bv == null) return 0;
+            if (av == null) return 1;
+            if (bv == null) return -1;
+            var cmp = typeof av === 'number'
+              ? av - bv
+              : String(av).toLowerCase().localeCompare(String(bv).toLowerCase());
+            return sortDir === 'asc' ? cmp : -cmp;
+          });
+        }
+
+        function updateHeaders() {
+          document.querySelectorAll('.pdash-th-sort').forEach(function (th) {
+            var active = th.dataset.sort === sortField;
+            th.classList.toggle('pdash-th-sort--active', active);
+            th.querySelector('.pdash-sort-icon').textContent = active
+              ? (sortDir === 'asc' ? ' ↑' : ' ↓')
+              : '';
+          });
+        }
+
         // ── Render ────────────────────────────────────────────────
 
         function render() {
           var q = searchQuery.toLowerCase();
-          var filtered = allProducts.filter(function (p) {
+          var filtered = sortRows(allProducts.filter(function (p) {
             return (
               !q ||
               (p.name && p.name.toLowerCase().indexOf(q) !== -1) ||
               (p.supplier && p.supplier.toLowerCase().indexOf(q) !== -1)
             );
-          });
+          }));
 
           var html = '';
 
@@ -293,6 +327,20 @@
 
         // ── Toolbar events ────────────────────────────────────────
 
+        document.querySelectorAll('.pdash-th-sort').forEach(function (th) {
+          th.addEventListener('click', function () {
+            var field = this.dataset.sort;
+            if (sortField === field) {
+              sortDir = sortDir === 'asc' ? 'desc' : 'asc';
+            } else {
+              sortField = field;
+              sortDir = 'asc';
+            }
+            updateHeaders();
+            render();
+          });
+        });
+
         searchInput.addEventListener('input', function () {
           searchQuery = this.value;
           render();
@@ -321,6 +369,7 @@
                 return;
               }
               allProducts = result.data;
+              updateHeaders();
               render();
             });
         });
