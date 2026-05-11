@@ -46,12 +46,18 @@
       }
     }
 
-    // Replace MEDIVEX_SUPPLIER_DIRECTORY.products with all rows that have a supplier + unit_cost
+    // Replace MEDIVEX_SUPPLIER_DIRECTORY.products and rebuild the suppliers list
     var dir = window.MEDIVEX_SUPPLIER_DIRECTORY;
     if (dir) {
       var supRows = dbRows.filter(function (r) { return r.supplier && r.unit_cost != null; });
       if (supRows.length > 0) {
+        // Derive unique supplier names directly from DB so Manager edits are reflected
+        var supplierSet = {};
+        supRows.forEach(function (r) { supplierSet[r.supplier] = true; });
+        var supplierList = Object.keys(supplierSet).sort();
+
         window.MEDIVEX_SUPPLIER_DIRECTORY = Object.assign({}, dir, {
+          suppliers: supplierList,
           products: supRows.map(function (r) {
             return { supplier: r.supplier, product: r.name, unitCost: Number(r.unit_cost) };
           }),
