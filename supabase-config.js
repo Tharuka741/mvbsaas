@@ -34,34 +34,29 @@
     return rows;
   }
 
-  // Apply DB product rows back to the window globals app.js / supplier-orders.js read
+  // Rebuild window globals directly from Supabase rows — no name-matching needed
   function applyToGlobals(dbRows) {
-    var invMap = {};   // name → unit_price
-    var supMap = {};   // "supplier|name" → unit_cost
-
-    dbRows.forEach(function (r) {
-      if (r.unit_price != null) invMap[r.name] = Number(r.unit_price);
-      if (r.unit_cost != null && r.supplier) supMap[r.supplier + '|' + r.name] = Number(r.unit_cost);
-    });
-
+    // Replace MEDIVEX_PRODUCTS with all rows that have a unit_price
     if (window.MEDIVEX_PRODUCTS) {
-      window.MEDIVEX_PRODUCTS = window.MEDIVEX_PRODUCTS.map(function (p) {
-        return invMap[p.name] !== undefined
-          ? Object.assign({}, p, { unitPrice: invMap[p.name] })
-          : p;
-      });
+      var invRows = dbRows.filter(function (r) { return r.unit_price != null; });
+      if (invRows.length > 0) {
+        window.MEDIVEX_PRODUCTS = invRows.map(function (r) {
+          return { name: r.name, unitPrice: Number(r.unit_price) };
+        });
+      }
     }
 
+    // Replace MEDIVEX_SUPPLIER_DIRECTORY.products with all rows that have a supplier + unit_cost
     var dir = window.MEDIVEX_SUPPLIER_DIRECTORY;
-    if (dir && dir.products) {
-      window.MEDIVEX_SUPPLIER_DIRECTORY = Object.assign({}, dir, {
-        products: dir.products.map(function (p) {
-          var k = p.supplier + '|' + p.product;
-          return supMap[k] !== undefined
-            ? Object.assign({}, p, { unitCost: supMap[k] })
-            : p;
-        }),
-      });
+    if (dir) {
+      var supRows = dbRows.filter(function (r) { return r.supplier && r.unit_cost != null; });
+      if (supRows.length > 0) {
+        window.MEDIVEX_SUPPLIER_DIRECTORY = Object.assign({}, dir, {
+          products: supRows.map(function (r) {
+            return { supplier: r.supplier, product: r.name, unitCost: Number(r.unit_cost) };
+          }),
+        });
+      }
     }
   }
 
