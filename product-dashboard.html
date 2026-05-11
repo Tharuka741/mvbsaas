@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Price Manager — Medivex</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="site-shell">
+      <header class="app-nav panel-card">
+        <a class="app-nav__brand" href="index.html">
+          <img src="assets/logo.png" alt="Medivex Biotech logo" />
+          <div>
+            <p class="eyebrow">Operations Workspace</p>
+            <strong>Medivex Billing &amp; Orders</strong>
+          </div>
+        </a>
+        <nav class="app-nav__links" aria-label="Primary">
+          <a class="app-nav__link" href="index.html">Dashboard</a>
+          <a class="app-nav__link" href="invoice-generator.html">Invoice Generator</a>
+          <a class="app-nav__link" href="supplier-orders.html">Supplier Orders</a>
+          <a class="app-nav__link app-nav__link--active" href="product-dashboard.html">Price Manager</a>
+        </nav>
+      </header>
+
+      <div class="pdash-shell">
+        <!-- Page header -->
+        <div class="pdash-header">
+          <div class="pdash-header__copy">
+            <p class="eyebrow">Pricing</p>
+            <h1>Price Manager</h1>
+            <p>Edit invoice prices and supplier costs. Changes take effect across the app immediately.</p>
+          </div>
+          <div class="pdash-header__actions">
+            <button class="pdash-btn pdash-btn--ghost" id="btn-reset">Reset All to Defaults</button>
+            <button class="pdash-btn pdash-btn--primary" id="btn-save">Save Changes</button>
+          </div>
+        </div>
+
+        <!-- Tables panel -->
+        <div class="pdash-panel">
+          <div class="pdash-toolbar">
+            <div class="pdash-tab-group">
+              <button class="pdash-tab pdash-tab--active" data-tab="invoice">Invoice Prices</button>
+              <button class="pdash-tab" data-tab="supplier">Supplier Costs</button>
+            </div>
+            <input class="pdash-search" id="pdash-search" type="search" placeholder="Filter products…" autocomplete="off" />
+            <div class="pdash-toolbar__spacer"></div>
+          </div>
+
+          <!-- Invoice Prices -->
+          <div class="pdash-tab-content" data-tab="invoice">
+            <div class="pdash-table-wrap">
+              <table class="pdash-table">
+                <thead>
+                  <tr>
+                    <th>Product Name</th>
+                    <th>Default Price</th>
+                    <th>Current Price (Rs.)</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody id="invoice-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Supplier Costs -->
+          <div class="pdash-tab-content pdash-tab-content--hidden" data-tab="supplier">
+            <div class="pdash-table-wrap">
+              <table class="pdash-table">
+                <thead>
+                  <tr>
+                    <th>Supplier</th>
+                    <th>Product</th>
+                    <th>Default Cost</th>
+                    <th>Current Cost (Rs.)</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody id="supplier-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="products.js"></script>
+    <script src="supplier-data.js"></script>
+    <script src="supabase-config.js"></script>
+    <script>
+      (function () {
+        var store = window.MVB_PRICE_STORE;
+
+        // Populated after Supabase init resolves
+        var baseProducts = [];   // hard-coded JS defaults
+        var baseSupplier = [];   // hard-coded JS defaults
+        var currentInvoice = {}; // {name: price} — what's currently in DB / being edited
+        var currentSupplier = {}; // {"supplier|product": cost}
+
+        var searchQuery = '';
+
+        var invoiceTbody = document.getElementById('invoice-tbody');
+        var supplierTbody = document.getElementById('supplier-tbody');
+        var searchInput = document.getElementById('pdash-search');
+        var btnSave = document.getElementById('btn-save');
+        var btnReset = document.getElementById('btn-reset');
+        var tabs = document.querySelectorAll('.pdash-tab');
+        var tabContents = document.querySelectorAll('.pdash-tab-content');
+
+        function esc(str) {
+          return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
+        }
+
+        function fmt(val) {
+          return Number(val).toFixed(2);
+        }
+
+        function isModifiedInvoice(name, currentVal) {
+          var base = baseProducts.find(function (p) { return p.name === name; });
+          return base && Math.abs(Number(currentVal) - base.unitPrice) > 0.001;
+        }
+
+        function isModifiedSupplier(key, currentVal) {
+          var parts = key.split('|');
+          var base = baseSupplier.find(function (p) {
+            return p.supplier === parts[0] && p.product === parts.slice(1).join('|');
+          });
+          return base && Math.abs(Number(currentVal) - base.unitCost) > 0.001;
+        }
+
+        function renderInvoice() {
+          var q = searchQuery.toLowerCase();
+          var sorted = baseProducts.slice().sort(function (a, b) {
+            return a.name.localeCompare(b.name);
+          });
+          var html = '';
+          var shown = 0;
+
+          for (var i = 0; i < sorted.length; i++) {
+            var p = sorted[i];
+            if (q && p.name.toLowerCase().indexOf(q) === -1) continue;
+            shown++;
+            var currentVal = currentInvoice[p.name] !== undefined ? currentInvoice[p.name] : p.unitPrice;
+            var modified = Math.abs(Number(currentVal) - p.unitPrice) > 0.001;
+            html +=
+              '<tr class="' + (modified ? 'is-modified' : '') + '">' +
+              '<td>' + esc(p.name) + '</td>' +
+              '<td>Rs. ' + fmt(p.unitPrice) + '</td>' +
+              '<td><input class="pdash-price-input' + (modified ? ' is-changed' : '') + '"' +
+              ' type="number" min="0" step="0.01"' +
+              ' value="' + fmt(currentVal) + '"' +
+              ' data-default="' + p.unitPrice + '"' +
+              ' data-product="' + esc(p.name) + '"' +
+              ' data-type="invoice"></td>' +
+              '<td><span class="pdash-badge ' + (modified ? 'pdash-badge--modified' : 'pdash-badge--default') + '">' +
+              (modified ? 'Modified' : 'Default') + '</span></td>' +
+              '</tr>';
+          }
+
+          if (shown === 0) {
+            html = '<tr><td colspan="4" class="pdash-empty">No products match your search.</td></tr>';
+          }
+
+          invoiceTbody.innerHTML = html;
+          attachListeners(invoiceTbody);
+        }
+
+        function renderSupplier() {
+          var q = searchQuery.toLowerCase();
+          var sorted = baseSupplier.slice().sort(function (a, b) {
+            var sc = a.supplier.localeCompare(b.supplier);
+            return sc !== 0 ? sc : a.product.localeCompare(b.product);
+          });
+          var html = '';
+          var shown = 0;
+
+          for (var i = 0; i < sorted.length; i++) {
+            var p = sorted[i];
+            if (q && p.supplier.toLowerCase().indexOf(q) === -1 && p.product.toLowerCase().indexOf(q) === -1) continue;
+            shown++;
+            var k = p.supplier + '|' + p.product;
+            var currentVal = currentSupplier[k] !== undefined ? currentSupplier[k] : p.unitCost;
+            var modified = Math.abs(Number(currentVal) - p.unitCost) > 0.001;
+            html +=
+              '<tr class="' + (modified ? 'is-modified' : '') + '">' +
+              '<td>' + esc(p.supplier) + '</td>' +
+              '<td>' + esc(p.product) + '</td>' +
+              '<td>Rs. ' + fmt(p.unitCost) + '</td>' +
+              '<td><input class="pdash-price-input' + (modified ? ' is-changed' : '') + '"' +
+              ' type="number" min="0" step="0.01"' +
+              ' value="' + fmt(currentVal) + '"' +
+              ' data-default="' + p.unitCost + '"' +
+              ' data-key="' + esc(k) + '"' +
+              ' data-type="supplier"></td>' +
+              '<td><span class="pdash-badge ' + (modified ? 'pdash-badge--modified' : 'pdash-badge--default') + '">' +
+              (modified ? 'Modified' : 'Default') + '</span></td>' +
+              '</tr>';
+          }
+
+          if (shown === 0) {
+            html = '<tr><td colspan="5" class="pdash-empty">No products match your search.</td></tr>';
+          }
+
+          supplierTbody.innerHTML = html;
+          attachListeners(supplierTbody);
+        }
+
+        function attachListeners(tbody) {
+          tbody.querySelectorAll('.pdash-price-input').forEach(function (input) {
+            input.addEventListener('input', onPriceInput);
+          });
+        }
+
+        function onPriceInput() {
+          var val = parseFloat(this.value);
+          if (isNaN(val)) return;
+          var row = this.closest('tr');
+          var badge = row.querySelector('.pdash-badge');
+          var def = parseFloat(this.dataset.default);
+          var modified = Math.abs(val - def) > 0.001;
+
+          if (this.dataset.type === 'invoice') {
+            currentInvoice[this.dataset.product] = val;
+          } else {
+            currentSupplier[this.dataset.key] = val;
+          }
+
+          this.classList.toggle('is-changed', modified);
+          row.classList.toggle('is-modified', modified);
+          badge.className = 'pdash-badge ' + (modified ? 'pdash-badge--modified' : 'pdash-badge--default');
+          badge.textContent = modified ? 'Modified' : 'Default';
+        }
+
+        // Tab switching
+        tabs.forEach(function (tab) {
+          tab.addEventListener('click', function () {
+            var target = this.dataset.tab;
+            tabs.forEach(function (t) { t.classList.toggle('pdash-tab--active', t.dataset.tab === target); });
+            tabContents.forEach(function (c) { c.classList.toggle('pdash-tab-content--hidden', c.dataset.tab !== target); });
+          });
+        });
+
+        // Search
+        searchInput.addEventListener('input', function () {
+          searchQuery = this.value;
+          renderInvoice();
+          renderSupplier();
+        });
+
+        // Save — collect every input's current value and upsert to Supabase
+        btnSave.addEventListener('click', async function () {
+          btnSave.disabled = true;
+          btnSave.textContent = 'Saving…';
+
+          var invoiceRows = Object.entries(currentInvoice).map(function (entry) {
+            return { name: entry[0], unit_price: entry[1] };
+          });
+
+          var supplierRows = Object.entries(currentSupplier).map(function (entry) {
+            var parts = entry[0].split('|');
+            return { supplier: parts[0], product: parts.slice(1).join('|'), unit_cost: entry[1] };
+          });
+
+          var results = await Promise.all([
+            invoiceRows.length ? store.saveAllInvoicePrices(invoiceRows) : Promise.resolve({}),
+            supplierRows.length ? store.saveAllSupplierCosts(supplierRows) : Promise.resolve({}),
+          ]);
+
+          var hasError = results.some(function (r) { return r && r.error; });
+
+          btnSave.disabled = false;
+          btnSave.textContent = hasError ? 'Error — try again' : 'Saved!';
+          btnSave.classList.toggle('pdash-btn--saved', !hasError);
+          setTimeout(function () {
+            btnSave.textContent = 'Save Changes';
+            btnSave.classList.remove('pdash-btn--saved');
+          }, 1800);
+        });
+
+        // Reset — re-seed Supabase from JS file defaults
+        btnReset.addEventListener('click', async function () {
+          if (!confirm('Reset all prices to the original hard-coded defaults? This cannot be undone.')) return;
+
+          btnReset.disabled = true;
+          btnReset.textContent = 'Resetting…';
+
+          var invoiceRows = baseProducts.map(function (p) {
+            return { name: p.name, unit_price: p.unitPrice };
+          });
+          var supplierRows = baseSupplier.map(function (p) {
+            return { supplier: p.supplier, product: p.product, unit_cost: p.unitCost };
+          });
+
+          await Promise.all([
+            store.saveAllInvoicePrices(invoiceRows),
+            store.saveAllSupplierCosts(supplierRows),
+          ]);
+
+          // Rebuild currentInvoice / currentSupplier from defaults
+          currentInvoice = {};
+          baseProducts.forEach(function (p) { currentInvoice[p.name] = p.unitPrice; });
+          currentSupplier = {};
+          baseSupplier.forEach(function (p) { currentSupplier[p.supplier + '|' + p.product] = p.unitCost; });
+
+          btnReset.disabled = false;
+          btnReset.textContent = 'Reset All to Defaults';
+          renderInvoice();
+          renderSupplier();
+        });
+
+        // ── Init ──────────────────────────────────────────────────
+
+        invoiceTbody.innerHTML = '<tr><td colspan="4" class="pdash-empty">Loading prices…</td></tr>';
+        supplierTbody.innerHTML = '<tr><td colspan="5" class="pdash-empty">Loading prices…</td></tr>';
+
+        Promise.all([
+          store.initInvoicePrices(),
+          store.initSupplierCosts(),
+        ]).finally(function () {
+          baseProducts = window.MVB_BASE_PRODUCTS || [];
+          baseSupplier = (window.MVB_BASE_SUPPLIER || {}).products || [];
+
+          // currentInvoice = what the DB returned (already applied to MEDIVEX_PRODUCTS)
+          (window.MEDIVEX_PRODUCTS || []).forEach(function (p) {
+            currentInvoice[p.name] = p.unitPrice;
+          });
+          ((window.MEDIVEX_SUPPLIER_DIRECTORY || {}).products || []).forEach(function (p) {
+            currentSupplier[p.supplier + '|' + p.product] = p.unitCost;
+          });
+
+          renderInvoice();
+          renderSupplier();
+        });
+      })();
+    </script>
+  </body>
+</html>
