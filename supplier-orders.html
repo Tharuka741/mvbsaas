@@ -7,187 +7,251 @@
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
-    <div class="site-shell">
-      <header class="app-nav panel-card">
-        <a class="app-nav__brand" href="index.html">
-          <img src="assets/logo.png" alt="Medivex Biotech logo" />
+    <div class="erp-shell">
+
+      <!-- ── Sidebar ──────────────────────────────────────────────── -->
+      <aside class="sidebar">
+        <div class="sidebar__brand">
+          <div class="sidebar__brand-logo">
+            <img src="assets/logo-icon.png" alt="" />
+          </div>
           <div>
-            <p class="eyebrow">Operations Workspace</p>
-            <strong>Medivex Billing &amp; Orders</strong>
+            <strong class="sidebar__brand-name">Medivex</strong>
+            <span class="sidebar__brand-sub">Distribution ERP</span>
           </div>
-        </a>
-        <nav class="app-nav__links" aria-label="Primary">
-          <a class="app-nav__link" href="index.html">Dashboard</a>
-          <a class="app-nav__link" href="invoice-generator.html">Invoice Generator</a>
-          <a class="app-nav__link app-nav__link--active" href="supplier-orders.html">
-            Supplier Orders
+        </div>
+
+        <nav class="sidebar__nav" aria-label="Primary">
+          <p class="sidebar__section-label">Overview</p>
+          <a class="sidebar__link" href="index.html">
+            <svg class="sidebar__link-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+            Dashboard
           </a>
-          <a class="app-nav__link" href="product-dashboard.html">Manager</a>
+
+          <p class="sidebar__section-label">Sales</p>
+          <a class="sidebar__link" href="invoice-generator.html">
+            <svg class="sidebar__link-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+            Invoices
+            <span class="sidebar__badge">4</span>
+          </a>
+          <a class="sidebar__link" href="customer-orders.html">
+            <svg class="sidebar__link-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+            Customer orders
+          </a>
+          <a class="sidebar__link" href="customers.html">
+            <svg class="sidebar__link-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            Customers
+          </a>
+
+          <p class="sidebar__section-label">Purchasing</p>
+          <a class="sidebar__link sidebar__link--active" href="supplier-orders.html">
+            <svg class="sidebar__link-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+            Supplier orders
+          </a>
+          <a class="sidebar__link" href="#">
+            <svg class="sidebar__link-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>
+            GRN
+          </a>
+          <a class="sidebar__link" href="#">
+            <svg class="sidebar__link-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+            Suppliers
+          </a>
+
+          <p class="sidebar__section-label">Inventory</p>
+          <a class="sidebar__link" href="product-dashboard.html">
+            <svg class="sidebar__link-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><line x1="16.5" y1="9.4" x2="7.5" y2="4.21"/><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+            Products
+          </a>
+          <a class="sidebar__link" href="#">
+            <svg class="sidebar__link-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+            Stock levels
+          </a>
+
+          <p class="sidebar__section-label">Reports</p>
+          <a class="sidebar__link" href="#">
+            <svg class="sidebar__link-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+            Reports
+          </a>
         </nav>
-      </header>
 
-      <div class="page-shell page-shell--operations">
-        <aside class="panel-card composer-panel">
-          <div class="brand-block">
-            <img class="brand-logo" src="assets/logo.png" alt="Medivex Biotech logo" />
-            <div class="brand-copy">
-              <p class="eyebrow">Supply Desk</p>
-              <h1>Supplier Orders</h1>
-              <p class="lede">
-                Capture supplier orders, pull unit costs directly from the supplier workbook,
-                optionally calculate VAT at 18%, and keep every added order visible in one place.
-              </p>
-            </div>
+        <div class="sidebar__footer">
+          <div class="sidebar__avatar">KP</div>
+          <div>
+            <strong class="sidebar__user-name">Kamal Perera</strong>
+            <span class="sidebar__user-role">Admin</span>
           </div>
+          <button class="sidebar__settings-btn" aria-label="Settings">
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          </button>
+        </div>
+      </aside>
 
-          <section class="section-card">
-            <div class="section-heading">
-              <div>
-                <p class="section-kicker">Order Details</p>
-                <h2>Supplier and reference</h2>
+      <!-- ── Main ─────────────────────────────────────────────────── -->
+      <div class="erp-main">
+        <div class="page-shell page-shell--operations">
+          <aside class="panel-card composer-panel">
+            <div class="brand-block">
+              <img class="brand-logo" src="assets/logo.png" alt="Medivex Biotech logo" />
+              <div class="brand-copy">
+                <p class="eyebrow">Supply Desk</p>
+                <h1>Supplier Orders</h1>
+                <p class="lede">
+                  Capture supplier orders, pull unit costs directly from the supplier workbook,
+                  optionally calculate VAT at 18%, and keep every added order visible in one place.
+                </p>
               </div>
             </div>
 
-            <div class="field-grid field-grid--two">
-              <label class="field field--full">
-                <span>Supplier</span>
-                <select id="supplier-name"></select>
-              </label>
+            <section class="section-card">
+              <div class="section-heading">
+                <div>
+                  <p class="section-kicker">Order Details</p>
+                  <h2>Supplier and reference</h2>
+                </div>
+              </div>
 
-              <label class="field">
-                <span>Order Date</span>
-                <input id="supplier-order-date" type="date" />
-              </label>
-
-              <label class="field">
-                <span>Supplier Reference</span>
-                <input
-                  id="supplier-order-reference"
-                  type="text"
-                  placeholder="PO / invoice / delivery note"
-                />
-              </label>
-
-              <div class="field field--full">
-                <span>VAT</span>
-                <label class="toggle-card" for="supplier-vat-enabled">
-                  <input id="supplier-vat-enabled" type="checkbox" />
-                  <div class="toggle-card__copy">
-                    <strong>Include VAT at 18%</strong>
-                    <small>Turn this on only if the supplier invoice includes VAT.</small>
-                  </div>
+              <div class="field-grid field-grid--two">
+                <label class="field field--full">
+                  <span>Supplier</span>
+                  <select id="supplier-name"></select>
                 </label>
-              </div>
-            </div>
 
-            <p id="supplier-status" class="field-note">
-              Choose a supplier to load the available products and unit costs.
-            </p>
-          </section>
+                <label class="field">
+                  <span>Order Date</span>
+                  <input id="supplier-order-date" type="date" />
+                </label>
 
-          <section class="section-card">
-            <div class="section-heading section-heading--inline">
-              <div>
-                <p class="section-kicker">Line Items</p>
-                <h2>Products and quantities</h2>
+                <label class="field">
+                  <span>Supplier Reference</span>
+                  <input
+                    id="supplier-order-reference"
+                    type="text"
+                    placeholder="PO / invoice / delivery note"
+                  />
+                </label>
+
+                <div class="field field--full">
+                  <span>VAT</span>
+                  <label class="toggle-card" for="supplier-vat-enabled">
+                    <input id="supplier-vat-enabled" type="checkbox" />
+                    <div class="toggle-card__copy">
+                      <strong>Include VAT at 18%</strong>
+                      <small>Turn this on only if the supplier invoice includes VAT.</small>
+                    </div>
+                  </label>
+                </div>
               </div>
-              <button id="add-supplier-line" type="button" class="button button--soft">
-                Add Product
+
+              <p id="supplier-status" class="field-note">
+                Choose a supplier to load the available products and unit costs.
+              </p>
+            </section>
+
+            <section class="section-card">
+              <div class="section-heading section-heading--inline">
+                <div>
+                  <p class="section-kicker">Line Items</p>
+                  <h2>Products and quantities</h2>
+                </div>
+                <button id="add-supplier-line" type="button" class="button button--soft">
+                  Add Product
+                </button>
+              </div>
+
+              <div id="supplier-line-items" class="order-line-items"></div>
+            </section>
+
+            <section class="summary-band summary-band--four">
+              <article class="summary-card">
+                <span>Active Lines</span>
+                <strong id="supplier-summary-lines">0</strong>
+              </article>
+              <article class="summary-card">
+                <span>Total Qty.</span>
+                <strong id="supplier-summary-quantity">0</strong>
+              </article>
+              <article class="summary-card">
+                <span id="supplier-summary-vat-label">VAT 0% (LKR)</span>
+                <strong id="supplier-summary-vat">0.00</strong>
+              </article>
+              <article class="summary-card">
+                <span id="supplier-summary-net-label">Net Total</span>
+                <strong id="supplier-summary-net">0.00</strong>
+              </article>
+            </section>
+
+            <div class="action-row">
+              <button id="save-supplier-order" type="button" class="button button--primary">
+                Add Supplier Order
+              </button>
+              <button id="reset-supplier-order" type="button" class="button button--ghost">
+                Reset
               </button>
             </div>
+          </aside>
 
-            <div id="supplier-line-items" class="order-line-items"></div>
-          </section>
-
-          <section class="summary-band summary-band--four">
-            <article class="summary-card">
-              <span>Active Lines</span>
-              <strong id="supplier-summary-lines">0</strong>
-            </article>
-            <article class="summary-card">
-              <span>Total Qty.</span>
-              <strong id="supplier-summary-quantity">0</strong>
-            </article>
-            <article class="summary-card">
-              <span id="supplier-summary-vat-label">VAT 0% (LKR)</span>
-              <strong id="supplier-summary-vat">0.00</strong>
-            </article>
-            <article class="summary-card">
-              <span id="supplier-summary-net-label">Net Total</span>
-              <strong id="supplier-summary-net">0.00</strong>
-            </article>
-          </section>
-
-          <div class="action-row">
-            <button id="save-supplier-order" type="button" class="button button--primary">
-              Add Supplier Order
-            </button>
-            <button id="reset-supplier-order" type="button" class="button button--ghost">
-              Reset
-            </button>
-          </div>
-        </aside>
-
-        <main class="preview-panel">
-          <div class="preview-toolbar">
-            <div>
-              <p class="section-kicker">Order Register</p>
-              <h2>All added supplier orders</h2>
-            </div>
-            <p class="preview-note">
-              Orders stay visible only for the current page session and clear on reload.
-            </p>
-          </div>
-
-          <section class="orders-panel">
-            <div class="orders-metrics">
-              <article class="summary-card">
-                <span>Orders Added</span>
-                <strong id="orders-count">0</strong>
-              </article>
-              <article class="summary-card">
-                <span>Total Units</span>
-                <strong id="orders-quantity">0</strong>
-              </article>
-              <article class="summary-card">
-                <span>Aggregate Net Total</span>
-                <strong id="orders-net-total">0.00</strong>
-              </article>
-            </div>
-
-            <div class="orders-batch-bar">
-              <div class="orders-batch-bar__summary">
-                <p class="section-kicker">Batch Actions</p>
-                <strong id="selected-orders-count">0 orders selected</strong>
+          <main class="preview-panel">
+            <div class="preview-toolbar">
+              <div>
+                <p class="section-kicker">Order Register</p>
+                <h2>All added supplier orders</h2>
               </div>
-              <div class="orders-batch-bar__actions">
-                <button id="select-all-orders" type="button" class="button button--soft">
-                  Select All
-                </button>
-                <button id="clear-selected-orders" type="button" class="button button--ghost">
-                  Clear
-                </button>
-                <button id="delete-selected-orders" type="button" class="button button--ghost">
-                  Delete Selected
-                </button>
-                <button id="generate-selected-grn" type="button" class="button button--primary">
-                  Generate GRN
-                </button>
-                <button
-                  id="generate-selected-po"
-                  type="button"
-                  class="button button--ghost"
-                  disabled
-                >
-                  Generate PO
-                </button>
-              </div>
+              <p class="preview-note">
+                Orders stay visible only for the current page session and clear on reload.
+              </p>
             </div>
 
-            <div id="supplier-orders-list" class="orders-list"></div>
-          </section>
-        </main>
+            <section class="orders-panel">
+              <div class="orders-metrics">
+                <article class="summary-card">
+                  <span>Orders Added</span>
+                  <strong id="orders-count">0</strong>
+                </article>
+                <article class="summary-card">
+                  <span>Total Units</span>
+                  <strong id="orders-quantity">0</strong>
+                </article>
+                <article class="summary-card">
+                  <span>Aggregate Net Total</span>
+                  <strong id="orders-net-total">0.00</strong>
+                </article>
+              </div>
+
+              <div class="orders-batch-bar">
+                <div class="orders-batch-bar__summary">
+                  <p class="section-kicker">Batch Actions</p>
+                  <strong id="selected-orders-count">0 orders selected</strong>
+                </div>
+                <div class="orders-batch-bar__actions">
+                  <button id="select-all-orders" type="button" class="button button--soft">
+                    Select All
+                  </button>
+                  <button id="clear-selected-orders" type="button" class="button button--ghost">
+                    Clear
+                  </button>
+                  <button id="delete-selected-orders" type="button" class="button button--ghost">
+                    Delete Selected
+                  </button>
+                  <button id="generate-selected-grn" type="button" class="button button--primary">
+                    Generate GRN
+                  </button>
+                  <button
+                    id="generate-selected-po"
+                    type="button"
+                    class="button button--ghost"
+                    disabled
+                  >
+                    Generate PO
+                  </button>
+                </div>
+              </div>
+
+              <div id="supplier-orders-list" class="orders-list"></div>
+            </section>
+          </main>
+        </div>
       </div>
+
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>

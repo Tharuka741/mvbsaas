@@ -7,110 +7,280 @@
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
-    <div class="site-shell">
-      <header class="app-nav panel-card">
-        <a class="app-nav__brand" href="index.html">
-          <img src="assets/logo.png" alt="Medivex Biotech logo" />
+    <div class="erp-shell">
+
+      <!-- ── Sidebar ──────────────────────────────────────────────── -->
+      <aside class="sidebar">
+        <div class="sidebar__brand">
+          <div class="sidebar__brand-logo">
+            <img src="assets/logo-icon.png" alt="" />
+          </div>
           <div>
-            <p class="eyebrow">Operations Workspace</p>
-            <strong>Medivex Billing &amp; Orders</strong>
+            <strong class="sidebar__brand-name">Medivex</strong>
+            <span class="sidebar__brand-sub">Distribution ERP</span>
           </div>
-        </a>
-        <nav class="app-nav__links" aria-label="Primary">
-          <a class="app-nav__link app-nav__link--active" href="index.html">Dashboard</a>
-          <a class="app-nav__link" href="invoice-generator.html">Invoice Generator</a>
-          <a class="app-nav__link" href="supplier-orders.html">Supplier Orders</a>
-          <a class="app-nav__link" href="product-dashboard.html">Manager</a>
+        </div>
+
+        <nav class="sidebar__nav" aria-label="Primary">
+          <p class="sidebar__section-label">Overview</p>
+          <a class="sidebar__link sidebar__link--active" href="index.html">
+            <svg class="sidebar__link-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+            Dashboard
+          </a>
+
+          <p class="sidebar__section-label">Sales</p>
+          <a class="sidebar__link" href="invoice-generator.html">
+            <svg class="sidebar__link-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+            Invoices
+            <span class="sidebar__badge">4</span>
+          </a>
+          <a class="sidebar__link" href="customer-orders.html">
+            <svg class="sidebar__link-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+            Customer orders
+          </a>
+          <a class="sidebar__link" href="customers.html">
+            <svg class="sidebar__link-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            Customers
+          </a>
+
+          <p class="sidebar__section-label">Purchasing</p>
+          <a class="sidebar__link" href="supplier-orders.html">
+            <svg class="sidebar__link-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+            Supplier orders
+          </a>
+          <a class="sidebar__link" href="#">
+            <svg class="sidebar__link-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>
+            GRN
+          </a>
+          <a class="sidebar__link" href="#">
+            <svg class="sidebar__link-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+            Suppliers
+          </a>
+
+          <p class="sidebar__section-label">Inventory</p>
+          <a class="sidebar__link" href="product-dashboard.html">
+            <svg class="sidebar__link-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><line x1="16.5" y1="9.4" x2="7.5" y2="4.21"/><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+            Products
+          </a>
+          <a class="sidebar__link" href="#">
+            <svg class="sidebar__link-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+            Stock levels
+          </a>
+
+          <p class="sidebar__section-label">Reports</p>
+          <a class="sidebar__link" href="#">
+            <svg class="sidebar__link-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+            Reports
+          </a>
         </nav>
-      </header>
 
-      <main class="dashboard-shell">
-        <section class="dashboard-hero">
-          <article class="dashboard-hero__intro panel-card">
-            <div class="dashboard-hero__copy">
-              <p class="eyebrow">Home</p>
-              <h1>Medivex Operations Dashboard</h1>
-              <p class="lede">
-                Start from one place and jump straight into the tools your team is using today.
-                For now, the workspace includes invoice generation and supplier order handling.
-              </p>
-            </div>
+        <div class="sidebar__footer">
+          <div class="sidebar__avatar">KP</div>
+          <div>
+            <strong class="sidebar__user-name">Kamal Perera</strong>
+            <span class="sidebar__user-role">Admin</span>
+          </div>
+          <button class="sidebar__settings-btn" aria-label="Settings">
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          </button>
+        </div>
+      </aside>
 
-            <div class="dashboard-hero__brand">
-              <img src="assets/logo.png" alt="Medivex Biotech logo" />
-              <div>
-                <strong>MEDIVEX BIOTECH</strong>
-                <p>Advancing health, transforming lives.</p>
+      <!-- ── Main ─────────────────────────────────────────────────── -->
+      <div class="erp-main">
+
+        <!-- Page heading -->
+        <div class="section-heading" style="margin-bottom:22px;">
+          <div>
+            <p class="eyebrow">Home</p>
+            <h1 style="margin:0;font-size:1.6rem;font-weight:800;color:var(--ink);">Dashboard</h1>
+          </div>
+        </div>
+
+        <!-- Stat cards -->
+        <div class="dash-stat-grid">
+          <div class="dash-stat-card">
+            <span class="dash-stat-card__label">Revenue (this month)</span>
+            <strong class="dash-stat-card__value">Rs 842K</strong>
+            <span class="dash-stat-card__trend dash-trend--up">↑ 12% vs last month</span>
+          </div>
+          <div class="dash-stat-card">
+            <span class="dash-stat-card__label">Pending invoices</span>
+            <strong class="dash-stat-card__value">18</strong>
+            <span class="dash-stat-card__trend dash-trend--warn">4 overdue</span>
+          </div>
+          <div class="dash-stat-card">
+            <span class="dash-stat-card__label">Open orders</span>
+            <strong class="dash-stat-card__value">34</strong>
+            <span class="dash-stat-card__trend dash-trend--up">↑ 8 new today</span>
+          </div>
+          <div class="dash-stat-card">
+            <span class="dash-stat-card__label">GRNs awaiting</span>
+            <strong class="dash-stat-card__value">6</strong>
+            <span class="dash-stat-card__trend dash-trend--muted">2 partially received</span>
+          </div>
+        </div>
+
+        <!-- Content rows -->
+        <div class="dash-content">
+
+          <!-- Recent orders row -->
+          <div class="dash-row">
+
+            <div class="dash-panel">
+              <div class="dash-panel__hd">
+                <h2>Recent customer orders</h2>
+                <a href="invoice-generator.html">View all →</a>
               </div>
+              <table class="dash-table">
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Customer</th>
+                    <th>Amount</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="dash-cell-id">#INV-091</td>
+                    <td>Colombo Medical</td>
+                    <td class="dash-cell-amount">Rs 24,800</td>
+                    <td><span class="dash-badge dash-badge--paid">Paid</span></td>
+                  </tr>
+                  <tr>
+                    <td class="dash-cell-id">#INV-090</td>
+                    <td>Medfresh Ltd</td>
+                    <td class="dash-cell-amount">Rs 11,200</td>
+                    <td><span class="dash-badge dash-badge--pending">Pending</span></td>
+                  </tr>
+                  <tr>
+                    <td class="dash-cell-id">#INV-089</td>
+                    <td>HealthCare Hub</td>
+                    <td class="dash-cell-amount">Rs 8,500</td>
+                    <td><span class="dash-badge dash-badge--draft">Draft</span></td>
+                  </tr>
+                  <tr>
+                    <td class="dash-cell-id">#INV-088</td>
+                    <td>Green Cross Pharm</td>
+                    <td class="dash-cell-amount">Rs 32,000</td>
+                    <td><span class="dash-badge dash-badge--paid">Paid</span></td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
-          </article>
 
-          <aside class="dashboard-hero__side panel-card">
-            <p class="section-kicker">Workspace Snapshot</p>
-            <div class="dashboard-stats">
-              <article class="dashboard-stat">
-                <span>Active Features</span>
-                <strong>2</strong>
-              </article>
-              <article class="dashboard-stat">
-                <span>Customer Billing</span>
-                <strong>Ready</strong>
-              </article>
-              <article class="dashboard-stat">
-                <span>Supplier Intake</span>
-                <strong>Ready</strong>
-              </article>
+            <div class="dash-panel">
+              <div class="dash-panel__hd">
+                <h2>Recent supplier orders</h2>
+                <a href="supplier-orders.html">View all →</a>
+              </div>
+              <table class="dash-table">
+                <thead>
+                  <tr>
+                    <th>PO</th>
+                    <th>Supplier</th>
+                    <th>Amount</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="dash-cell-id">#PO-044</td>
+                    <td>PharmaCo</td>
+                    <td class="dash-cell-amount">Rs 180K</td>
+                    <td><span class="dash-badge dash-badge--received">Received</span></td>
+                  </tr>
+                  <tr>
+                    <td class="dash-cell-id">#PO-043</td>
+                    <td>MedImports</td>
+                    <td class="dash-cell-amount">Rs 95,400</td>
+                    <td><span class="dash-badge dash-badge--partial">Partial</span></td>
+                  </tr>
+                  <tr>
+                    <td class="dash-cell-id">#PO-042</td>
+                    <td>BioSupply</td>
+                    <td class="dash-cell-amount">Rs 210K</td>
+                    <td><span class="dash-badge dash-badge--ordered">Ordered</span></td>
+                  </tr>
+                  <tr>
+                    <td class="dash-cell-id">#PO-041</td>
+                    <td>PharmaLink</td>
+                    <td class="dash-cell-amount">Rs 67,200</td>
+                    <td><span class="dash-badge dash-badge--received">Received</span></td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
-          </aside>
-        </section>
 
-        <section class="dashboard-section">
-          <div class="section-heading">
-            <div>
-              <p class="section-kicker">Features</p>
-              <h2>Choose a workspace</h2>
-            </div>
           </div>
 
-          <div class="dashboard-grid">
-            <a class="feature-card" href="invoice-generator.html">
-              <div class="feature-card__eyebrow">
-                <span class="feature-card__pill">Finance</span>
-                <strong>01</strong>
-              </div>
-              <h3>Invoice Generator</h3>
-              <p>
-                Create polished customer invoices from the product catalogue, calculate totals
-                automatically, and download a clean PDF.
-              </p>
-              <ul class="feature-card__list">
-                <li>Product dropdown with matched pricing</li>
-                <li>Multiple line items and total calculation</li>
-                <li>Auto due date set to 45 days after invoice date</li>
-              </ul>
-              <span class="feature-card__cta">Open Invoice Generator</span>
-            </a>
+          <!-- Low stock + activity row -->
+          <div class="dash-row">
 
-            <a class="feature-card feature-card--accent" href="supplier-orders.html">
-              <div class="feature-card__eyebrow">
-                <span class="feature-card__pill">Supply</span>
-                <strong>02</strong>
+            <div class="dash-panel">
+              <div class="dash-panel__hd">
+                <h2>Low stock alerts</h2>
+                <a href="product-dashboard.html">Manage →</a>
               </div>
-              <h3>Supplier Orders</h3>
-              <p>
-                Capture supplier orders with auto-filled unit costs, VAT-inclusive totals, and
-                register entries that can be selected for GRN generation.
-              </p>
-              <ul class="feature-card__list">
-                <li>Supplier and product data loaded from your workbook</li>
-                <li>VAT at 18% and net total calculations</li>
-                <li>Batch select orders for delete and GRN generation</li>
-              </ul>
-              <span class="feature-card__cta">Open Supplier Orders</span>
-            </a>
+              <div class="stock-list-hd">
+                <span>Product</span>
+                <span>Stock</span>
+                <span>Units</span>
+              </div>
+              <div class="stock-row">
+                <span class="stock-row__name">Amoxicillin 500mg</span>
+                <div class="stock-bar-track"><div class="stock-bar-fill stock-bar-fill--crit" style="width:18%"></div></div>
+                <span class="stock-row__units">12</span>
+              </div>
+              <div class="stock-row">
+                <span class="stock-row__name">Paracetamol 1000mg</span>
+                <div class="stock-bar-track"><div class="stock-bar-fill stock-bar-fill--low" style="width:46%"></div></div>
+                <span class="stock-row__units">40</span>
+              </div>
+              <div class="stock-row">
+                <span class="stock-row__name">Metformin 500mg</span>
+                <div class="stock-bar-track"><div class="stock-bar-fill stock-bar-fill--crit" style="width:14%"></div></div>
+                <span class="stock-row__units">18</span>
+              </div>
+              <div class="stock-row">
+                <span class="stock-row__name">Cetirizine 10mg</span>
+                <div class="stock-bar-track"><div class="stock-bar-fill stock-bar-fill--low" style="width:54%"></div></div>
+                <span class="stock-row__units">55</span>
+              </div>
+            </div>
+
+            <div class="dash-panel">
+              <div class="dash-panel__hd">
+                <h2>Activity feed</h2>
+              </div>
+              <div class="activity-item">
+                <div class="activity-dot activity-dot--green"></div>
+                <span class="activity-item__text">GRN #031 completed for PO-044</span>
+                <span class="activity-item__time">9m</span>
+              </div>
+              <div class="activity-item">
+                <div class="activity-dot activity-dot--blue"></div>
+                <span class="activity-item__text">Invoice #091 marked paid</span>
+                <span class="activity-item__time">42m</span>
+              </div>
+              <div class="activity-item">
+                <div class="activity-dot activity-dot--amber"></div>
+                <span class="activity-item__text">PO-043 created for MedImports</span>
+                <span class="activity-item__time">1h</span>
+              </div>
+              <div class="activity-item">
+                <div class="activity-dot activity-dot--red"></div>
+                <span class="activity-item__text">Stock alert: Amoxicillin below reorder level</span>
+                <span class="activity-item__time">3h</span>
+              </div>
+            </div>
+
           </div>
-        </section>
-      </main>
+
+        </div>
+      </div>
+
     </div>
   </body>
 </html>

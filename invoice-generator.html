@@ -7,240 +7,313 @@
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
-    <div class="site-shell">
-      <header class="app-nav panel-card">
-        <a class="app-nav__brand" href="index.html">
-          <img src="assets/logo.png" alt="Medivex Biotech logo" />
+    <div class="erp-shell">
+
+      <!-- ── Sidebar ──────────────────────────────────────────────── -->
+      <aside class="sidebar">
+        <div class="sidebar__brand">
+          <div class="sidebar__brand-logo">
+            <img src="assets/logo-icon.png" alt="" />
+          </div>
           <div>
-            <p class="eyebrow">Operations Workspace</p>
-            <strong>Medivex Billing &amp; Orders</strong>
+            <strong class="sidebar__brand-name">Medivex</strong>
+            <span class="sidebar__brand-sub">Distribution ERP</span>
           </div>
-        </a>
-        <nav class="app-nav__links" aria-label="Primary">
-          <a class="app-nav__link" href="index.html">Dashboard</a>
-          <a class="app-nav__link app-nav__link--active" href="invoice-generator.html">
-            Invoice Generator
+        </div>
+
+        <nav class="sidebar__nav" aria-label="Primary">
+          <p class="sidebar__section-label">Overview</p>
+          <a class="sidebar__link" href="index.html">
+            <svg class="sidebar__link-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+            Dashboard
           </a>
-          <a class="app-nav__link" href="supplier-orders.html">Supplier Orders</a>
-          <a class="app-nav__link" href="product-dashboard.html">Manager</a>
+
+          <p class="sidebar__section-label">Sales</p>
+          <a class="sidebar__link sidebar__link--active" href="invoice-generator.html">
+            <svg class="sidebar__link-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+            Invoices
+            <span class="sidebar__badge">4</span>
+          </a>
+          <a class="sidebar__link" href="customer-orders.html">
+            <svg class="sidebar__link-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+            Customer orders
+          </a>
+          <a class="sidebar__link" href="customers.html">
+            <svg class="sidebar__link-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            Customers
+          </a>
+
+          <p class="sidebar__section-label">Purchasing</p>
+          <a class="sidebar__link" href="supplier-orders.html">
+            <svg class="sidebar__link-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+            Supplier orders
+          </a>
+          <a class="sidebar__link" href="#">
+            <svg class="sidebar__link-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>
+            GRN
+          </a>
+          <a class="sidebar__link" href="#">
+            <svg class="sidebar__link-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+            Suppliers
+          </a>
+
+          <p class="sidebar__section-label">Inventory</p>
+          <a class="sidebar__link" href="product-dashboard.html">
+            <svg class="sidebar__link-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><line x1="16.5" y1="9.4" x2="7.5" y2="4.21"/><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+            Products
+          </a>
+          <a class="sidebar__link" href="#">
+            <svg class="sidebar__link-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+            Stock levels
+          </a>
+
+          <p class="sidebar__section-label">Reports</p>
+          <a class="sidebar__link" href="#">
+            <svg class="sidebar__link-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+            Reports
+          </a>
         </nav>
-      </header>
 
-      <div class="page-shell">
-        <aside class="panel-card composer-panel">
-          <div class="brand-block">
-            <img class="brand-logo" src="assets/logo.png" alt="Medivex Biotech logo" />
-            <div class="brand-copy">
-              <p class="eyebrow">Invoice Studio</p>
-              <h1>Medivex Invoice Generator</h1>
-              <p class="lede">
-                Build polished customer invoices from your product catalogue, calculate totals
-                automatically, and download the final copy as a clean A4 invoice.
-              </p>
-            </div>
+        <div class="sidebar__footer">
+          <div class="sidebar__avatar">KP</div>
+          <div>
+            <strong class="sidebar__user-name">Kamal Perera</strong>
+            <span class="sidebar__user-role">Admin</span>
           </div>
+          <button class="sidebar__settings-btn" aria-label="Settings">
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          </button>
+        </div>
+      </aside>
 
-          <section class="section-card">
-            <div class="section-heading">
-              <div>
-                <p class="section-kicker">Invoice Details</p>
-                <h2>Customer information</h2>
+      <!-- ── Main ─────────────────────────────────────────────────── -->
+      <div class="erp-main">
+        <div class="page-shell">
+          <aside class="panel-card composer-panel">
+            <div class="brand-block">
+              <img class="brand-logo" src="assets/logo.png" alt="Medivex Biotech logo" />
+              <div class="brand-copy">
+                <p class="eyebrow">Invoice Studio</p>
+                <h1>Medivex Invoice Generator</h1>
+                <p class="lede">
+                  Build polished customer invoices from your product catalogue, calculate totals
+                  automatically, and download the final copy as a clean A4 invoice.
+                </p>
               </div>
             </div>
 
-            <div class="field-grid field-grid--two">
-              <label class="field">
-                <span>Invoice Number</span>
-                <input id="invoice-number" type="text" placeholder="MED/260429-001" />
-              </label>
-
-              <label class="field">
-                <span>Invoice Date</span>
-                <input id="invoice-date" type="date" />
-              </label>
-
-              <label class="field field--full">
-                <span>Due Date</span>
-                <input id="due-date" type="date" readonly />
-                <small>Calculated automatically as 45 days after the invoice date.</small>
-              </label>
-
-              <label class="field field--full">
-                <span>Billed To</span>
-                <textarea
-                  id="billed-to"
-                  rows="4"
-                  placeholder="Customer / pharmacy name&#10;Branch / street&#10;City"
-                ></textarea>
-              </label>
-            </div>
-          </section>
-
-          <section class="section-card">
-            <div class="section-heading section-heading--inline">
-              <div>
-                <p class="section-kicker">Line Items</p>
-                <h2>Products and quantities</h2>
-              </div>
-              <button id="add-item" type="button" class="button button--soft">Add Product</button>
-            </div>
-
-            <div id="line-items" class="line-items"></div>
-          </section>
-
-          <section class="summary-band">
-            <article class="summary-card">
-              <span>Active Lines</span>
-              <strong id="summary-lines">0</strong>
-            </article>
-            <article class="summary-card">
-              <span>Total Qty.</span>
-              <strong id="summary-quantity">0</strong>
-            </article>
-            <article class="summary-card">
-              <span>Payable (LKR)</span>
-              <strong id="summary-total">0.00</strong>
-            </article>
-          </section>
-
-          <div class="action-row">
-            <button id="download-pdf" type="button" class="button button--primary">
-              Download PDF
-            </button>
-            <button id="reset-form" type="button" class="button button--ghost">Reset</button>
-          </div>
-        </aside>
-
-        <main class="preview-panel">
-          <div class="preview-toolbar">
-            <div>
-              <p class="section-kicker">Live Preview</p>
-              <h2>Printable invoice</h2>
-            </div>
-            <p class="preview-note">A4-ready layout with VAT omitted from calculations.</p>
-          </div>
-
-          <article class="invoice-sheet" id="invoice-sheet">
-            <header class="invoice-header">
-              <div class="invoice-brand">
-                <img src="assets/logo-icon-invoice.png" alt="Medivex Biotech logo icon" />
+            <section class="section-card">
+              <div class="section-heading">
                 <div>
-                  <h3>MEDIVEX BIOTECH</h3>
-                  <p>Advancing health, transforming lives.</p>
+                  <p class="section-kicker">Invoice Details</p>
+                  <h2>Customer information</h2>
                 </div>
               </div>
 
-              <div class="invoice-header-meta">
-                <p class="copy-badge">CUSTOMER COPY</p>
-                <div class="invoice-chip">
-                  <span>INVOICE</span>
-                  <strong id="preview-invoice-number">MED/------</strong>
-                </div>
-              </div>
-            </header>
+              <div class="field-grid field-grid--two">
+                <label class="field">
+                  <span>Invoice Number</span>
+                  <input id="invoice-number" type="text" placeholder="MED/260429-001" />
+                </label>
 
-            <section class="invoice-info-grid">
-              <article class="info-card info-card--large">
-                <span class="info-label">Billed To</span>
-                <p id="preview-billed-to">Customer details will appear here.</p>
-              </article>
-
-              <article class="info-card">
-                <div class="info-row">
+                <label class="field">
                   <span>Invoice Date</span>
-                  <strong id="preview-invoice-date">--/--/----</strong>
-                </div>
-                <div class="info-row">
+                  <input id="invoice-date" type="date" />
+                </label>
+
+                <label class="field field--full">
                   <span>Due Date</span>
-                  <strong id="preview-due-date">--/--/----</strong>
+                  <input id="due-date" type="date" readonly />
+                  <small>Calculated automatically as 45 days after the invoice date.</small>
+                </label>
+
+                <div class="field field--full customer-selector-group">
+                  <span>Select Customer</span>
+                  <select id="customer-select">
+                    <option value="">— Choose a saved customer —</option>
+                  </select>
+                  <small>Pick a customer to pre-fill the billing details below.</small>
                 </div>
+
+                <label class="field field--full">
+                  <span>Billed To</span>
+                  <textarea
+                    id="billed-to"
+                    rows="4"
+                    placeholder="Customer / pharmacy name&#10;Branch / street&#10;City"
+                  ></textarea>
+                </label>
+              </div>
+            </section>
+
+            <section class="section-card">
+              <div class="section-heading section-heading--inline">
+                <div>
+                  <p class="section-kicker">Line Items</p>
+                  <h2>Products and quantities</h2>
+                </div>
+                <button id="add-item" type="button" class="button button--soft">Add Product</button>
+              </div>
+
+              <div id="line-items" class="line-items"></div>
+            </section>
+
+            <section class="summary-band">
+              <article class="summary-card">
+                <span>Active Lines</span>
+                <strong id="summary-lines">0</strong>
+              </article>
+              <article class="summary-card">
+                <span>Total Qty.</span>
+                <strong id="summary-quantity">0</strong>
+              </article>
+              <article class="summary-card">
+                <span>Payable (LKR)</span>
+                <strong id="summary-total">0.00</strong>
               </article>
             </section>
 
-            <section class="invoice-table-wrap">
-              <table class="invoice-table">
-                <thead>
-                  <tr>
-                    <th>Description</th>
-                    <th>Price (LKR)</th>
-                    <th>Qty.</th>
-                    <th>FOC</th>
-                    <th>Amount (LKR)</th>
-                  </tr>
-                </thead>
-                <tbody id="preview-line-items"></tbody>
-              </table>
-            </section>
+            <div class="action-row">
+              <button id="download-pdf" type="button" class="button button--primary">
+                Download PDF
+              </button>
+              <button id="reset-form" type="button" class="button button--ghost">Reset</button>
+            </div>
+          </aside>
 
-            <section class="invoice-summary">
-              <div class="summary-box">
-                <div class="summary-box__row">
-                  <span>Subtotal</span>
-                  <strong id="preview-subtotal">0.00</strong>
+          <main class="preview-panel">
+            <div class="preview-toolbar">
+              <div>
+                <p class="section-kicker">Live Preview</p>
+                <h2>Printable invoice</h2>
+              </div>
+              <p class="preview-note">A4-ready layout with VAT omitted from calculations.</p>
+            </div>
+
+            <article class="invoice-sheet" id="invoice-sheet">
+              <header class="invoice-header">
+                <div class="invoice-brand">
+                  <img src="assets/logo-icon-invoice.png" alt="Medivex Biotech logo icon" />
+                  <div>
+                    <h3>MEDIVEX BIOTECH</h3>
+                    <p>Advancing health, transforming lives.</p>
+                  </div>
                 </div>
-                <div class="summary-box__row summary-box__row--muted">
-                  <span>VAT</span>
-                  <span>-</span>
+
+                <div class="invoice-header-meta">
+                  <p class="copy-badge">CUSTOMER COPY</p>
+                  <div class="invoice-chip">
+                    <span>INVOICE</span>
+                    <strong id="preview-invoice-number">MED/------</strong>
+                  </div>
                 </div>
-                <div class="summary-box__row summary-box__row--grand">
-                  <span>Grand Total</span>
-                  <strong id="preview-total">0.00</strong>
+              </header>
+
+              <section class="invoice-info-grid">
+                <article class="info-card info-card--large">
+                  <span class="info-label">Billed To</span>
+                  <p id="preview-billed-to">Customer details will appear here.</p>
+                </article>
+
+                <article class="info-card">
+                  <div class="info-row">
+                    <span>Invoice Date</span>
+                    <strong id="preview-invoice-date">--/--/----</strong>
+                  </div>
+                  <div class="info-row">
+                    <span>Due Date</span>
+                    <strong id="preview-due-date">--/--/----</strong>
+                  </div>
+                </article>
+              </section>
+
+              <section class="invoice-table-wrap">
+                <table class="invoice-table">
+                  <thead>
+                    <tr>
+                      <th>Description</th>
+                      <th>Price (LKR)</th>
+                      <th>Qty.</th>
+                      <th>FOC</th>
+                      <th>Amount (LKR)</th>
+                    </tr>
+                  </thead>
+                  <tbody id="preview-line-items"></tbody>
+                </table>
+              </section>
+
+              <section class="invoice-summary">
+                <div class="summary-box">
+                  <div class="summary-box__row">
+                    <span>Subtotal</span>
+                    <strong id="preview-subtotal">0.00</strong>
+                  </div>
+                  <div class="summary-box__row summary-box__row--muted">
+                    <span>VAT</span>
+                    <span>-</span>
+                  </div>
+                  <div class="summary-box__row summary-box__row--grand">
+                    <span>Grand Total</span>
+                    <strong id="preview-total">0.00</strong>
+                  </div>
                 </div>
-              </div>
-            </section>
+              </section>
 
-            <section class="invoice-signoff">
-              <div class="signature-card">
-                <span class="signature-line"></span>
-                <strong>ISSUED BY</strong>
-              </div>
-              <div class="bank-card">
-                <p class="bank-card__title">Bank Details</p>
-                <p>A/C No: 0003 1003 3790</p>
-                <p>Name: Medivex Biotech (Private) Limited</p>
-                <p>Bank: Sampath Bank</p>
-                <p>Branch: Nugegoda</p>
-              </div>
-              <div class="signature-card">
-                <span class="signature-line"></span>
-                <strong>RECEIVED BY</strong>
-              </div>
-            </section>
+              <section class="invoice-signoff">
+                <div class="signature-card">
+                  <span class="signature-line"></span>
+                  <strong>ISSUED BY</strong>
+                </div>
+                <div class="bank-card">
+                  <p class="bank-card__title">Bank Details</p>
+                  <p>A/C No: 0003 1003 3790</p>
+                  <p>Name: Medivex Biotech (Private) Limited</p>
+                  <p>Bank: Sampath Bank</p>
+                  <p>Branch: Nugegoda</p>
+                </div>
+                <div class="signature-card">
+                  <span class="signature-line"></span>
+                  <strong>RECEIVED BY</strong>
+                </div>
+              </section>
 
-            <section class="invoice-meta">
-              <div>
-                <span class="info-label">Credit Period</span>
-                <strong>45 Days</strong>
-              </div>
-              <div>
-                <span class="info-label">Payment Method</span>
-                <strong>Bank Transfer / Cheque</strong>
-              </div>
-            </section>
+              <section class="invoice-meta">
+                <div>
+                  <span class="info-label">Credit Period</span>
+                  <strong>45 Days</strong>
+                </div>
+                <div>
+                  <span class="info-label">Payment Method</span>
+                  <strong>Bank Transfer / Cheque</strong>
+                </div>
+              </section>
 
-            <footer class="invoice-footer">
-              <div>
-                <span>Website</span>
-                <strong>www.medivex.lk</strong>
-              </div>
-              <div>
-                <span>Phone</span>
-                <strong>+94 76 293 4783</strong>
-              </div>
-              <div>
-                <span>Address</span>
-                <strong>No. 10, Raymond Rd, Nugegoda</strong>
-              </div>
-            </footer>
-          </article>
-        </main>
+              <footer class="invoice-footer">
+                <div>
+                  <span>Website</span>
+                  <strong>www.medivex.lk</strong>
+                </div>
+                <div>
+                  <span>Phone</span>
+                  <strong>+94 76 293 4783</strong>
+                </div>
+                <div>
+                  <span>Address</span>
+                  <strong>No. 10, Raymond Rd, Nugegoda</strong>
+                </div>
+              </footer>
+            </article>
+          </main>
+        </div>
       </div>
+
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="supabase-config.js"></script>
     <script src="logo-data.js"></script>
     <script src="assets/vendor/pdf-lib.min.js"></script>
+    <script src="invoice-pdf.js"></script>
     <script>
       window.MVB_PRICE_STORE.initProducts().finally(function () {
         var s = document.createElement('script');
