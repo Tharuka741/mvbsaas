@@ -1,6 +1,7 @@
 const VAT_RATE = 0.18;
 const GRN_ROWS_PER_NOTE = 6;
-const GRN_NOTE_VERTICAL_OFFSET = 313;
+const GRN_NOTE_VERTICAL_OFFSET = 421;
+const GRN_TOP_BLANK = 130;
 
 const supplierDirectory = window.MEDIVEX_SUPPLIER_DIRECTORY || {
   suppliers: [],
@@ -680,8 +681,8 @@ function buildGrnNotes(orders) {
   return notes;
 }
 
-function drawGrnNote(page, note, slotIndex, fonts) {
-  const yOffset = slotIndex * GRN_NOTE_VERTICAL_OFFSET;
+function drawGrnNote(page, note, slotIndex, fonts, baseYOffset = 0) {
+  const yOffset = baseYOffset + slotIndex * GRN_NOTE_VERTICAL_OFFSET;
   const rowCells = [
     [281, 295],
     [295, 308],
@@ -847,27 +848,38 @@ async function generateSelectedGrnPdf() {
       bodyBold: await outputDoc.embedFont(window.PDFLib.StandardFonts.HelveticaBold),
     };
 
+    const templatePage = templateDoc.getPage(0);
+    const { width: pageWidth, height: pageHeight } = templatePage.getSize();
+    const halfHeight = pageHeight / 2;
+    const topMargin = Math.round(GRN_TOP_BLANK / 2);
+    const embeddedGrn = await outputDoc.embedPage(templatePage, {
+      left: 0,
+      bottom: halfHeight,
+      right: pageWidth,
+      top: pageHeight - GRN_TOP_BLANK,
+    });
+
     for (let index = 0; index < grnNotes.length; index += 2) {
-      const [templatePage] = await outputDoc.copyPages(templateDoc, Array.of(0));
-      const page = outputDoc.addPage(templatePage);
+      const page = outputDoc.addPage([pageWidth, pageHeight]);
       const topNote = grnNotes[index];
       const bottomNote = grnNotes[index + 1] || null;
 
-      drawGrnNote(page, topNote, 0, fonts);
+      page.drawPage(embeddedGrn, { x: 0, y: halfHeight + topMargin });
+      drawGrnNote(page, topNote, 0, fonts, -topMargin);
 
       if (bottomNote) {
-        drawGrnNote(page, bottomNote, 1, fonts);
-      } else {
-        const { width } = page.getSize();
-
-        page.drawRectangle({
-          x: 0,
-          y: 0,
-          width,
-          height: 421,
-          color: window.PDFLib.rgb(1, 1, 1),
-        });
+        page.drawPage(embeddedGrn, { x: 0, y: topMargin });
+        drawGrnNote(page, bottomNote, 1, fonts, -topMargin);
       }
+
+      page.drawLine({
+        start: { x: 0, y: halfHeight },
+        end: { x: pageWidth, y: halfHeight },
+        thickness: 0.5,
+        color: window.PDFLib.rgb(0.5, 0.5, 0.5),
+        dashArray: [4, 4],
+        dashPhase: 0,
+      });
     }
 
     const pdfBytes = await outputDoc.save();
