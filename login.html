@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Medivex — Sign in</title>
+    <link rel="stylesheet" href="styles.css" />
+    <style>
+      body {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--bg, #0f1117);
+      }
+
+      .login-card {
+        width: 100%;
+        max-width: 380px;
+        background: var(--surface, rgba(255,255,255,0.04));
+        border: 1px solid var(--border, rgba(255,255,255,0.08));
+        border-radius: 16px;
+        padding: 40px 36px 36px;
+        display: flex;
+        flex-direction: column;
+        gap: 28px;
+      }
+
+      .login-brand {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 10px;
+        text-align: center;
+      }
+
+      .login-brand img {
+        height: 48px;
+        width: auto;
+      }
+
+      .login-brand__name {
+        font-size: 1.15rem;
+        font-weight: 700;
+        color: var(--text-primary, #f0f0f0);
+        letter-spacing: -0.01em;
+      }
+
+      .login-brand__sub {
+        font-size: 0.75rem;
+        color: var(--text-muted, #888);
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+      }
+
+      .login-form {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+      }
+
+      .login-field {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+
+      .login-field label {
+        font-size: 0.75rem;
+        font-weight: 500;
+        color: var(--text-muted, #888);
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+      }
+
+      .login-field input {
+        background: var(--input-bg, rgba(255,255,255,0.06));
+        border: 1px solid var(--border, rgba(255,255,255,0.1));
+        border-radius: 8px;
+        color: var(--text-primary, #f0f0f0);
+        font-size: 0.9rem;
+        padding: 10px 13px;
+        outline: none;
+        transition: border-color 0.15s;
+        width: 100%;
+        box-sizing: border-box;
+      }
+
+      .login-field input:focus {
+        border-color: var(--accent, #3b82f6);
+      }
+
+      .login-btn {
+        width: 100%;
+        padding: 11px;
+        border: none;
+        border-radius: 8px;
+        background: var(--accent, #3b82f6);
+        color: #fff;
+        font-size: 0.9rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: opacity 0.15s;
+        margin-top: 4px;
+      }
+
+      .login-btn:hover   { opacity: 0.88; }
+      .login-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+      .login-error {
+        font-size: 0.8rem;
+        color: #f87171;
+        text-align: center;
+        min-height: 18px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="login-card">
+      <div class="login-brand">
+        <img src="assets/logo.png" alt="Medivex Biotech" />
+        <div>
+          <p class="login-brand__name">Medivex Biotech</p>
+          <p class="login-brand__sub">Distribution ERP</p>
+        </div>
+      </div>
+
+      <form class="login-form" id="login-form" autocomplete="on">
+        <div class="login-field">
+          <label for="login-email">Email</label>
+          <input id="login-email" type="email" placeholder="you@medivex.com" required autocomplete="username" />
+        </div>
+        <div class="login-field">
+          <label for="login-password">Password</label>
+          <input id="login-password" type="password" placeholder="••••••••" required autocomplete="current-password" />
+        </div>
+        <p class="login-error" id="login-error"></p>
+        <button class="login-btn" id="login-btn" type="submit">Sign in</button>
+      </form>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase-config.js"></script>
+    <script>
+      (async function () {
+        // Already signed in — go straight to dashboard
+        var res = await window.MVB_DB.auth.getSession();
+        if (res.data.session) {
+          window.location.replace('index.html');
+          return;
+        }
+
+        var form    = document.getElementById('login-form');
+        var emailEl = document.getElementById('login-email');
+        var passEl  = document.getElementById('login-password');
+        var btn     = document.getElementById('login-btn');
+        var errEl   = document.getElementById('login-error');
+
+        form.addEventListener('submit', async function (e) {
+          e.preventDefault();
+          errEl.textContent = '';
+          btn.disabled = true;
+          btn.textContent = 'Signing in…';
+
+          var result = await window.MVB_DB.auth.signInWithPassword({
+            email:    emailEl.value.trim(),
+            password: passEl.value,
+          });
+
+          if (result.error) {
+            errEl.textContent = result.error.message || 'Sign in failed. Check your credentials.';
+            btn.disabled = false;
+            btn.textContent = 'Sign in';
+            return;
+          }
+
+          window.location.replace('index.html');
+        });
+      })();
+    </script>
+  </body>
+</html>
