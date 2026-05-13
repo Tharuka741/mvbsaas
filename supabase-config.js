@@ -1,6 +1,6 @@
 (function () {
-  var SUPABASE_URL = 'https://slshvvchabaohxsdnehe.supabase.co';
-  var SUPABASE_KEY = 'sb_publishable_rbo_z0EqMsbXJ3GxKylDMQ_rIuyfSis';
+  var SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  var SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
 
   var db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
