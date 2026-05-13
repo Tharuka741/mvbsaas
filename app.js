@@ -376,13 +376,14 @@ async function saveCustomerOrder(invoiceData) {
   try {
     const db = window.MVB_DB;
     const result = await db.from('customer_orders').insert([{
+      order_number: invoiceData.invoiceNumber,
       invoice_number: invoiceData.invoiceNumber,
       invoice_date: invoiceData.invoiceDateValue || null,
       due_date: invoiceData.dueDateValue || null,
       billed_to: invoiceData.billedTo,
       total_amount: invoiceData.total,
       item_count: invoiceData.lineItems.length,
-      status: 'Processing',
+      status: 'Unpaid',
     }]).select('id');
 
     if (result.error || !result.data || !result.data.length) {
@@ -391,8 +392,6 @@ async function saveCustomerOrder(invoiceData) {
     }
 
     const orderId = result.data[0].id;
-    const orderNumber = 'ORD-' + String(orderId).padStart(4, '0');
-    await db.from('customer_orders').update({ order_number: orderNumber }).eq('id', orderId);
     await db.from('customer_order_items').insert(
       invoiceData.lineItems.map((item) => ({
         order_id: orderId,
@@ -443,13 +442,13 @@ async function loadCustomers() {
     const result = await window.MVB_DB.from("customers").select("id, contact, client, phone").order("contact");
     if (result.error || !result.data) return;
     result.data.forEach((c) => {
-      const label = c.client ? `${c.contact} — ${c.client}` : c.contact;
+      const label = c.contact ? `${c.client} — ${c.contact}` : c.client;
       const opt = document.createElement("option");
       opt.value = c.id;
       opt.textContent = label;
-      opt.dataset.contact = c.contact;
-      opt.dataset.client = c.client || "";
-      opt.dataset.phone = c.phone;
+      opt.dataset.client = c.client;
+      opt.dataset.contact = c.contact || "";
+      opt.dataset.phone = c.phone || "";
       refs.customerSelect.appendChild(opt);
     });
   } catch (_err) {
@@ -563,9 +562,9 @@ if (refs.customerSelect) {
   refs.customerSelect.addEventListener("change", () => {
     const opt = refs.customerSelect.options[refs.customerSelect.selectedIndex];
     if (!opt || !opt.value) return;
-    const lines = [opt.dataset.contact];
-    if (opt.dataset.client) lines.push(opt.dataset.client);
-    lines.push(opt.dataset.phone);
+    const lines = [opt.dataset.client];
+    if (opt.dataset.contact) lines.push(opt.dataset.contact);
+    if (opt.dataset.phone) lines.push(opt.dataset.phone);
     refs.billedTo.value = lines.join("\n");
     renderPreview();
   });

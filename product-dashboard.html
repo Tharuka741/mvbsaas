@@ -48,11 +48,11 @@
             <svg class="sidebar__link-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
             Supplier orders
           </a>
-          <a class="sidebar__link" href="#">
+          <a class="sidebar__link" href="grn.html">
             <svg class="sidebar__link-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>
             GRN
           </a>
-          <a class="sidebar__link" href="#">
+          <a class="sidebar__link" href="suppliers.html">
             <svg class="sidebar__link-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
             Suppliers
           </a>
@@ -138,6 +138,7 @@
         var store = window.MVB_PRICE_STORE;
 
         var allProducts = [];
+        var allSuppliers = [];
         var pendingUpdates = {}; // { id: { supplier, name, unit_cost, unit_price } }
         var searchQuery = '';
         var addingNew = false;
@@ -214,9 +215,11 @@
           var html = '';
 
           if (addingNew) {
+            var supplierOptions = '<option value="">— Select supplier —</option>' +
+              allSuppliers.map(function (s) { return '<option value="' + esc(s.name) + '">' + esc(s.name) + '</option>'; }).join('');
             html +=
               '<tr class="pdash-new-row" id="new-product-row">' +
-              '<td><input class="pdash-cell-input" id="new-supplier" type="text" placeholder="Supplier (optional)" autocomplete="off"></td>' +
+              '<td><select class="pdash-cell-input" id="new-supplier">' + supplierOptions + '</select></td>' +
               '<td><input class="pdash-cell-input" id="new-name" type="text" placeholder="Product name *" autocomplete="off"></td>' +
               '<td><input class="pdash-cell-input pdash-cell-input--num" id="new-cost" type="number" min="0" step="0.01" placeholder="—"></td>' +
               '<td><input class="pdash-cell-input pdash-cell-input--num" id="new-price" type="number" min="0" step="0.01" placeholder="—"></td>' +
@@ -235,9 +238,19 @@
             var cost = get(p.id, 'unit_cost', p.unit_cost);
             var price = get(p.id, 'unit_price', p.unit_price);
 
+            var supplierOpts = '<option value="">—</option>' +
+              allSuppliers.map(function (s) {
+                return '<option value="' + esc(s.name) + '"' + (s.name === supplier ? ' selected' : '') + '>' + esc(s.name) + '</option>';
+              }).join('');
+            // If current supplier value isn't in the list, add it as a selectable option so data isn't lost
+            var inList = allSuppliers.some(function (s) { return s.name === supplier; });
+            if (supplier && !inList) {
+              supplierOpts = '<option value="' + esc(supplier) + '" selected>' + esc(supplier) + ' (not in directory)</option>' + supplierOpts;
+            }
+
             html +=
               '<tr class="' + (dirty ? 'is-modified' : '') + '" data-id="' + p.id + '">' +
-              '<td><input class="pdash-cell-input" type="text" value="' + esc(supplier) + '" data-field="supplier" placeholder="—" autocomplete="off"></td>' +
+              '<td><select class="pdash-cell-input" data-field="supplier">' + supplierOpts + '</select></td>' +
               '<td><input class="pdash-cell-input" type="text" value="' + esc(name) + '" data-field="name" placeholder="Product name" autocomplete="off"></td>' +
               '<td><input class="pdash-cell-input pdash-cell-input--num" type="number" min="0" step="0.01" value="' + fmt(cost) + '" data-field="unit_cost" placeholder="—"></td>' +
               '<td><input class="pdash-cell-input pdash-cell-input--num" type="number" min="0" step="0.01" value="' + fmt(price) + '" data-field="unit_price" placeholder="—"></td>' +
@@ -304,6 +317,18 @@
             : this.value;
 
           row.classList.add('is-modified');
+        }
+
+        // ── Suppliers ─────────────────────────────────────────────
+
+        async function loadSuppliers() {
+          try {
+            var result = await db.from('suppliers').select('id, name').order('name');
+            if (result.error) throw result.error;
+            allSuppliers = result.data || [];
+          } catch (err) {
+            console.error('Failed to load suppliers:', err);
+          }
         }
 
         // ── Add ───────────────────────────────────────────────────
@@ -419,6 +444,8 @@
         // ── Init ──────────────────────────────────────────────────
 
         tbody.innerHTML = '<tr><td colspan="5" class="pdash-empty">Loading…</td></tr>';
+
+        loadSuppliers();
 
         store.initProducts().finally(function () {
           db.from('products')

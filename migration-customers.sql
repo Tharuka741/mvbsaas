@@ -3,9 +3,9 @@
 
 create table if not exists customers (
   id         bigint generated always as identity primary key,
-  client     text,           -- company / business name (optional)
-  contact    text not null,  -- person name
-  phone      text not null,
+  client     text not null,  -- company / business name (required)
+  contact    text,           -- contact person name (optional)
+  phone      text,           -- phone number (optional)
   created_at timestamptz not null default now()
 );
 

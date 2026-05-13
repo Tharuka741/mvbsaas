@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Medivex Customer Orders</title>
+    <title>Medivex GRN</title>
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
@@ -33,7 +33,7 @@
             <svg class="sidebar__link-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
             Invoices
           </a>
-          <a class="sidebar__link sidebar__link--active" href="customer-orders.html">
+          <a class="sidebar__link" href="customer-orders.html">
             <svg class="sidebar__link-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
             Customer orders
           </a>
@@ -47,7 +47,7 @@
             <svg class="sidebar__link-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
             Supplier orders
           </a>
-          <a class="sidebar__link" href="grn.html">
+          <a class="sidebar__link sidebar__link--active" href="grn.html">
             <svg class="sidebar__link-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>
             GRN
           </a>
@@ -87,55 +87,84 @@
 
       <!-- ── Main ─────────────────────────────────────────────────── -->
       <div class="erp-main">
-        <div class="co-page">
+        <div class="grn-shell">
 
-          <div class="co-toolbar">
-            <div class="co-toolbar__title">
-              <p class="section-kicker">Sales</p>
-              <h1>Customer Orders</h1>
-            </div>
-            <div class="co-controls">
-              <select id="co-status-filter" class="co-filter">
-                <option value="">All statuses</option>
-                <option value="Unpaid">Unpaid</option>
-                <option value="Paid">Paid</option>
-              </select>
+          <!-- Page header -->
+          <div class="pdash-header">
+            <div class="pdash-header__copy">
+              <p class="eyebrow">Purchasing</p>
+              <h1>Goods Received Notes</h1>
+              <p>Select pending supplier orders to generate a GRN, review the PDF, then confirm to update stock.</p>
             </div>
           </div>
 
-          <div class="co-metrics">
-            <article class="summary-card">
-              <span>Total Orders</span>
-              <strong id="co-metric-orders">0</strong>
-            </article>
-            <article class="summary-card">
-              <span>Total Units</span>
-              <strong id="co-metric-units">0</strong>
-            </article>
-            <article class="summary-card">
-              <span>Revenue (LKR)</span>
-              <strong id="co-metric-revenue">0.00</strong>
-            </article>
+          <!-- Part 1: Pending orders -->
+          <div class="grn-section">
+            <div class="grn-section-hd">
+              <div>
+                <p class="section-kicker">Part 1</p>
+                <h2>Pending Supplier Orders</h2>
+              </div>
+            </div>
+
+            <div class="grn-metrics">
+              <article class="summary-card">
+                <span>Pending Orders</span>
+                <strong id="grn-pending-count">—</strong>
+              </article>
+              <article class="summary-card">
+                <span>Total Units</span>
+                <strong id="grn-pending-units">—</strong>
+              </article>
+              <article class="summary-card">
+                <span>Aggregate Net Total</span>
+                <strong id="grn-pending-total">—</strong>
+              </article>
+            </div>
+
+            <div class="grn-batch-bar">
+              <div class="grn-batch-bar__summary">
+                <strong id="grn-selected-count">0 orders selected</strong>
+              </div>
+              <div class="grn-batch-bar__actions">
+                <button id="grn-select-all" type="button" class="button button--soft" disabled>Select All</button>
+                <button id="grn-clear-all" type="button" class="button button--ghost" disabled>Clear</button>
+                <button id="grn-generate-btn" type="button" class="button button--primary" disabled>Generate GRN</button>
+              </div>
+            </div>
+
+            <div id="grn-pending-list" class="orders-list">
+              <div class="orders-empty">Loading pending orders…</div>
+            </div>
           </div>
 
-          <div class="co-panel">
-            <div class="co-table-wrap">
-              <table class="co-table">
+          <!-- Part 2: GRN Register -->
+          <div class="grn-section">
+            <div class="grn-section-hd">
+              <div>
+                <p class="section-kicker">Part 2</p>
+                <h2>GRN Register</h2>
+              </div>
+              <article class="summary-card grn-reg-metric">
+                <span>Confirmed GRNs</span>
+                <strong id="grn-reg-count">—</strong>
+              </article>
+            </div>
+
+            <div class="pdash-table-wrap">
+              <table class="pdash-table">
                 <thead>
                   <tr>
-                    <th>Order</th>
+                    <th>GRN No.</th>
+                    <th>Supplier</th>
+                    <th>Reference</th>
                     <th>Date</th>
-                    <th>Customer</th>
-                    <th>Items</th>
-                    <th>Amount (LKR)</th>
-                    <th>Status</th>
-                    <th>Invoice</th>
+                    <th>Net Total (LKR)</th>
+                    <th></th>
                   </tr>
                 </thead>
-                <tbody id="co-table-body">
-                  <tr>
-                    <td colspan="7" class="co-empty">Loading orders…</td>
-                  </tr>
+                <tbody id="grn-register-tbody">
+                  <tr><td colspan="6" class="pdash-empty">Loading…</td></tr>
                 </tbody>
               </table>
             </div>
@@ -144,10 +173,22 @@
         </div>
       </div>
 
+      <!-- GRN Confirmation Bar (shown after generating PDF) -->
+      <div id="grn-confirm-bar" class="grn-confirm-bar grn-confirm-bar--hidden">
+        <div class="grn-confirm-bar__copy">
+          <strong>GRN generated</strong>
+          <span>Review the PDF that opened, then confirm to save and update stock — or discard to return.</span>
+        </div>
+        <div class="grn-confirm-bar__actions">
+          <button id="grn-confirm-btn" type="button" class="button button--primary">Confirm &amp; Save GRN</button>
+          <button id="grn-discard-btn" type="button" class="button button--ghost">Discard</button>
+        </div>
+      </div>
+
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="supabase-config.js"></script>
-    <script src="customer-orders.js"></script>
+    <script src="grn.js"></script>
   </body>
 </html>

@@ -2,6 +2,27 @@
   var db = window.MVB_DB;
   var allOrders = [];
   var currentFilter = '';
+  var pdfDepsLoaded = false;
+
+  function loadScript(src) {
+    return new Promise(function (resolve, reject) {
+      var existing = document.querySelector('script[src="' + src + '"]');
+      if (existing) { resolve(); return; }
+      var s = document.createElement('script');
+      s.src = src;
+      s.onload = resolve;
+      s.onerror = function () { reject(new Error('Failed to load ' + src)); };
+      document.body.appendChild(s);
+    });
+  }
+
+  async function loadPdfDeps() {
+    if (pdfDepsLoaded) return;
+    await loadScript('assets/vendor/pdf-lib.min.js');
+    await loadScript('logo-data.js');
+    await loadScript('invoice-pdf.js');
+    pdfDepsLoaded = true;
+  }
 
   var tbody = document.getElementById('co-table-body');
   var filterSelect = document.getElementById('co-status-filter');
@@ -24,12 +45,7 @@
   }
 
   function statusBadgeClass(status) {
-    var map = {
-      'Processing': 'co-badge--processing',
-      'Dispatched': 'co-badge--dispatched',
-      'Delivered': 'co-badge--delivered',
-    };
-    return map[status] || 'co-badge--processing';
+    return status === 'Paid' ? 'co-badge--paid' : 'co-badge--unpaid';
   }
 
   function escapeHtml(value) {
@@ -59,27 +75,24 @@
     tbody.innerHTML = orders.map(function (order) {
       var badgeClass = statusBadgeClass(order.status);
       var customer = (order.billed_to || '').split('\n')[0] || '—';
+      var orderRef = escapeHtml(order.order_number || order.invoice_number || '#' + order.id);
       return (
         '<tr>' +
-        '<td class="co-cell-id">' + escapeHtml(order.order_number || '#' + order.id) + '</td>' +
+        '<td class="co-cell-id">' + orderRef + '</td>' +
         '<td>' + formatDate(order.invoice_date) + '</td>' +
         '<td class="co-cell-customer"><span title="' + escapeHtml(order.billed_to || '') + '">' + escapeHtml(customer) + '</span></td>' +
         '<td>' + escapeHtml(String(order.item_count || 0)) + '</td>' +
         '<td class="co-cell-amount">' + formatAmount(order.total_amount) + '</td>' +
         '<td>' +
           '<select class="co-status-select" data-order-id="' + order.id + '">' +
-            '<option value="Processing"' + (order.status === 'Processing' ? ' selected' : '') + '>Processing</option>' +
-            '<option value="Dispatched"' + (order.status === 'Dispatched' ? ' selected' : '') + '>Dispatched</option>' +
-            '<option value="Delivered"' + (order.status === 'Delivered' ? ' selected' : '') + '>Delivered</option>' +
+            '<option value="Unpaid"' + (order.status !== 'Paid' ? ' selected' : '') + '>Unpaid</option>' +
+            '<option value="Paid"' + (order.status === 'Paid' ? ' selected' : '') + '>Paid</option>' +
           '</select>' +
         '</td>' +
-        '<td>' +
-          '<div class="co-cell-inv">' +
-            '<span>' + escapeHtml(order.invoice_number || '—') + '</span>' +
-            '<button class="co-download-btn" data-order-id="' + order.id + '" title="Re-generate invoice PDF" aria-label="Download invoice">' +
-              '<svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>' +
-            '</button>' +
-          '</div>' +
+        '<td style="text-align:center;">' +
+          '<button class="co-download-btn" data-order-id="' + order.id + '" title="Download invoice PDF" aria-label="Download invoice">' +
+            '<svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>' +
+          '</button>' +
         '</td>' +
         '</tr>'
       );
@@ -101,9 +114,7 @@
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (result.error) {
-        throw result.error;
-      }
+      if (result.error) throw result.error;
 
       allOrders = result.data || [];
       applyFilter();
@@ -151,10 +162,7 @@
         totalQuantity: items.reduce(function (sum, item) { return sum + item.quantity; }, 0),
       };
 
-      if (!window.PDFLib) {
-        window.alert('The PDF generator could not be loaded.');
-        return;
-      }
+      await loadPdfDeps();
 
       await window.MEDIVEX_PDF_GENERATOR.download(invoiceData);
     } catch (err) {

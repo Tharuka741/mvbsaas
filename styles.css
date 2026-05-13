@@ -2487,17 +2487,12 @@ button {
   white-space: nowrap;
 }
 
-.co-badge--processing {
+.co-badge--unpaid {
   background: rgba(185, 106, 16, 0.12);
   color: #b96a10;
 }
 
-.co-badge--dispatched {
-  background: rgba(21, 71, 150, 0.1);
-  color: var(--brand);
-}
-
-.co-badge--delivered {
+.co-badge--paid {
   background: rgba(45, 138, 78, 0.12);
   color: #2d8a4e;
 }
@@ -2655,4 +2650,376 @@ button {
 .customer-selector-group select:focus {
   outline: 2px solid var(--brand);
   outline-offset: 2px;
+}
+
+/* ── GRN page ─────────────────────────────────────────────────────── */
+
+.grn-shell {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  padding: 32px 40px 140px;
+}
+
+.grn-section {
+  background: var(--surface);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  border-radius: var(--radius-xl);
+  backdrop-filter: blur(20px);
+  box-shadow: var(--shadow-md);
+  overflow: hidden;
+}
+
+.grn-section-hd {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 24px 28px 0;
+}
+
+.grn-section-hd h2 {
+  margin: 4px 0 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.grn-reg-metric {
+  flex-shrink: 0;
+  min-width: 120px;
+  text-align: right;
+}
+
+.grn-metrics {
+  display: flex;
+  gap: 16px;
+  padding: 20px 28px 0;
+  flex-wrap: wrap;
+}
+
+.grn-metrics .summary-card {
+  flex: 1;
+  min-width: 140px;
+}
+
+.grn-batch-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 28px;
+  border-top: 1px solid var(--line);
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+
+.grn-batch-bar__summary strong {
+  font-size: 0.9rem;
+  color: var(--ink-soft);
+}
+
+.grn-batch-bar__actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.grn-section .orders-list {
+  padding: 0 28px 28px;
+  margin-top: 0;
+}
+
+.grn-section .pdash-table-wrap {
+  margin: 20px 0 0;
+}
+
+/* GRN confirmation bar */
+.grn-confirm-bar {
+  position: fixed;
+  bottom: 0;
+  left: var(--sidebar-w);
+  right: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 40px;
+  background: var(--brand);
+  color: #fff;
+  box-shadow: 0 -4px 24px rgba(14, 27, 61, 0.2);
+  flex-wrap: wrap;
+  transition: transform 0.25s ease;
+}
+
+.grn-confirm-bar--hidden {
+  transform: translateY(100%);
+}
+
+.grn-confirm-bar__copy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.grn-confirm-bar__copy strong {
+  font-size: 1rem;
+}
+
+.grn-confirm-bar__copy span {
+  font-size: 0.85rem;
+  opacity: 0.85;
+}
+
+.grn-confirm-bar__actions {
+  display: flex;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.grn-confirm-bar .button--primary {
+  background: #fff;
+  color: var(--brand);
+}
+
+.grn-confirm-bar .button--primary:hover {
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.grn-confirm-bar .button--ghost {
+  border-color: rgba(255, 255, 255, 0.5);
+  color: #fff;
+}
+
+.grn-confirm-bar .button--ghost:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* ── Supplier Orders page (so-shell) ─────────────────────────────── */
+
+.so-shell {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  padding: 32px 40px 60px;
+}
+
+.so-shell .composer-panel {
+  width: 100%;
+  max-width: 740px;
+}
+
+.so-shell .grn-section .orders-list {
+  padding: 0 28px 28px;
+}
+
+/* ── Compact order card ───────────────────────────────────────────── */
+
+.order-card--compact {
+  padding: 0;
+  border-radius: 16px;
+}
+
+.order-card__compact-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 13px 16px;
+  min-height: 52px;
+}
+
+.order-card__compact-name {
+  flex-shrink: 0;
+  min-width: 160px;
+  font-size: 0.95rem;
+}
+
+.order-card__compact-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  flex: 1;
+}
+
+.order-card--compact .order-badge {
+  min-height: 26px;
+  padding: 0 9px;
+  font-size: 0.78rem;
+}
+
+.order-card__compact-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.order-card__expand-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.9);
+  color: var(--ink-soft);
+  cursor: pointer;
+  transition: background 0.15s, transform 0.2s;
+  padding: 0;
+}
+
+.order-card__expand-btn:hover {
+  background: rgba(21, 71, 150, 0.06);
+  color: var(--brand);
+}
+
+.order-card__expand-btn svg {
+  width: 16px;
+  height: 16px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: transform 0.2s;
+}
+
+.order-card--expanded .order-card__expand-btn svg {
+  transform: rotate(180deg);
+}
+
+.order-card__compact-delete {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: 1px solid rgba(200, 40, 40, 0.18);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.9);
+  color: #c82828;
+  cursor: pointer;
+  transition: background 0.15s;
+  padding: 0;
+}
+
+.order-card__compact-delete:hover {
+  background: rgba(200, 40, 40, 0.08);
+}
+
+.order-card__compact-delete svg {
+  width: 14px;
+  height: 14px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* Detail section — hidden until expanded */
+.order-card__detail {
+  display: none;
+  border-top: 1px solid var(--line);
+  padding: 0 16px 16px;
+}
+
+.order-card--expanded .order-card__detail {
+  display: block;
+}
+
+.order-card--compact .order-card__table-wrap {
+  margin-top: 14px;
+  margin-bottom: 14px;
+}
+
+/* ── Supplier orders table rows ───────────────────────────────────── */
+
+.so-orders-table-wrap {
+  margin: 0 28px 28px;
+  border-radius: 16px;
+}
+
+.so-order-row td {
+  vertical-align: middle;
+}
+
+.so-order-row--selected td {
+  background: rgba(227, 238, 255, 0.55);
+}
+
+.so-row-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+.so-expand-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--ink-soft);
+  cursor: pointer;
+  padding: 0;
+  transition: background 0.15s, color 0.15s;
+}
+
+.so-expand-btn:hover {
+  background: rgba(21, 71, 150, 0.06);
+  color: var(--brand);
+}
+
+.so-expand-btn svg {
+  width: 14px;
+  height: 14px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: transform 0.2s;
+}
+
+.so-expand-btn--open svg {
+  transform: rotate(180deg);
+}
+
+.so-detail-row--hidden {
+  display: none;
+}
+
+.so-detail-cell {
+  padding: 0 16px 16px !important;
+  background: rgba(247, 250, 255, 0.7);
+}
+
+.so-detail-cell .order-card__table-wrap {
+  margin: 14px 0;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  overflow: hidden;
+}
+
+.so-detail-cell .order-card__summary {
+  margin-top: 12px;
+}
+
+.so-vat-badge {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 6px;
+  border-radius: 6px;
+  background: rgba(21, 71, 150, 0.1);
+  color: var(--brand);
+  font-size: 0.72rem;
+  font-weight: 700;
+  vertical-align: middle;
 }

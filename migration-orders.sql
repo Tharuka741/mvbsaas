@@ -10,7 +10,7 @@ create table if not exists customer_orders (
   billed_to     text,
   total_amount  numeric(14, 2) not null default 0,
   item_count    integer not null default 0,
-  status        text not null default 'Processing',
+  status        text not null default 'Unpaid',
   created_at    timestamptz not null default now()
 );
 

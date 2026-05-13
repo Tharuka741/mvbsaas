@@ -1,4 +1,5 @@
 const VAT_RATE = 0.18;
+const db = window.MVB_DB;
 const GRN_ROWS_PER_NOTE = 6;
 const GRN_NOTE_VERTICAL_OFFSET = 421;
 const GRN_TOP_BLANK = 130;
@@ -38,24 +39,32 @@ productsBySupplier.forEach((products) => {
   );
 });
 
-const supplierMetas = [...(supplierDirectory.suppliers || [])]
-  .map((displayName) => {
-    const catalogSupplier = supplierAliases[displayName] || displayName;
-    const productCount = (productsBySupplier.get(catalogSupplier) || []).length;
-    const missingCount = missingCountsBySupplier.get(catalogSupplier) || 0;
+let supplierMetas = [];
+let supplierMetaByDisplayName = new Map();
 
-    return {
-      displayName,
-      catalogSupplier,
-      productCount,
-      missingCount,
-    };
-  })
-  .sort((left, right) => left.displayName.localeCompare(right.displayName));
+async function loadSuppliersForForm() {
+  try {
+    const result = await db.from("suppliers").select("id, name").order("name");
+    if (result.error) throw result.error;
 
-const supplierMetaByDisplayName = new Map(
-  supplierMetas.map((supplierMeta) => [supplierMeta.displayName, supplierMeta]),
-);
+    supplierMetas = (result.data || []).map((row) => {
+      const displayName = row.name;
+      const catalogSupplier = supplierAliases[displayName] || displayName;
+      const productCount = (productsBySupplier.get(catalogSupplier) || []).length;
+      const missingCount = missingCountsBySupplier.get(catalogSupplier) || 0;
+      return { displayName, catalogSupplier, productCount, missingCount };
+    });
+
+    supplierMetaByDisplayName = new Map(
+      supplierMetas.map((sm) => [sm.displayName, sm]),
+    );
+
+    renderSupplierOptions();
+    renderSupplierStatus();
+  } catch (err) {
+    console.error("Failed to load suppliers:", err);
+  }
+}
 
 const refs = {
   supplierName: document.getElementById("supplier-name"),
@@ -74,14 +83,10 @@ const refs = {
   supplierSummaryNetLabel: document.getElementById("supplier-summary-net-label"),
   supplierSummaryNet: document.getElementById("supplier-summary-net"),
   ordersCount: document.getElementById("orders-count"),
-  ordersQuantity: document.getElementById("orders-quantity"),
-  ordersNetTotal: document.getElementById("orders-net-total"),
   selectedOrdersCount: document.getElementById("selected-orders-count"),
   selectAllOrders: document.getElementById("select-all-orders"),
   clearSelectedOrders: document.getElementById("clear-selected-orders"),
   deleteSelectedOrders: document.getElementById("delete-selected-orders"),
-  generateSelectedGrn: document.getElementById("generate-selected-grn"),
-  generateSelectedPo: document.getElementById("generate-selected-po"),
   supplierOrdersList: document.getElementById("supplier-orders-list"),
 };
 
@@ -413,493 +418,143 @@ function updateSupplierSummary() {
 function renderSupplierOrdersList() {
   syncSelectionState();
 
-  const totalQuantity = state.orders.reduce((sum, order) => sum + Number(order.totalQuantity || 0), 0);
-  const aggregateNetTotal = state.orders.reduce(
-    (sum, order) => sum + Number(order.netTotal || 0),
-    0,
-  );
   const selectedCount = getSelectedOrdersCount();
 
   refs.ordersCount.textContent = String(state.orders.length);
-  refs.ordersQuantity.textContent = formatQuantity(totalQuantity);
-  refs.ordersNetTotal.textContent = formatAmount(aggregateNetTotal);
-  refs.selectedOrdersCount.textContent = `${selectedCount} order${
-    selectedCount === 1 ? "" : "s"
-  } selected`;
+  refs.selectedOrdersCount.textContent = `${selectedCount} order${selectedCount === 1 ? "" : "s"} selected`;
   refs.selectAllOrders.disabled = !state.orders.length;
   refs.clearSelectedOrders.disabled = !selectedCount;
   refs.deleteSelectedOrders.disabled = !selectedCount;
-  refs.generateSelectedGrn.disabled = !selectedCount;
 
   if (!state.orders.length) {
     refs.supplierOrdersList.innerHTML = `
-      <div class="orders-empty">
-        Supplier orders will appear here once you add them from the form on the left.
-      </div>
+      <tr><td colspan="7" class="pdash-empty">
+        No supplier orders yet. Add one using the form above.
+      </td></tr>
     `;
     return;
   }
 
   refs.supplierOrdersList.innerHTML = state.orders
-    .map(
-      (order) => `
-        <article class="order-card${
-          state.selectedOrderIds.has(order.id) ? " order-card--selected" : ""
-        }" data-order-id="${escapeHtml(order.id)}">
-          <div class="order-card__header">
-            <div class="order-card__head-main">
-              <input
-                class="order-card__select"
-                type="checkbox"
-                data-action="toggle-order"
-                ${
-                  state.selectedOrderIds.has(order.id)
-                    ? "checked"
-                    : ""
-                }
-                aria-label="Select supplier order"
-              />
-              <div>
-                <p class="section-kicker">Supplier Order</p>
-                <h3>${escapeHtml(order.supplierName)}</h3>
-                <div class="order-card__meta">
-                  <span class="order-badge">Date: ${escapeHtml(order.orderDateLabel)}</span>
-                  ${
-                    order.reference
-                      ? `<span class="order-badge">Ref: ${escapeHtml(order.reference)}</span>`
-                      : ""
-                  }
-                  <span class="order-badge">VAT: ${order.vatEnabled ? "On" : "Off"}</span>
-                  <span class="order-badge">${formatQuantity(order.totalQuantity)} units</span>
-                </div>
+    .map((order) => {
+      const isSelected = state.selectedOrderIds.has(order.id);
+      const refLabel = order.reference || `#${order.id}`;
+      const itemLineRows = order.lineItems
+        .map(
+          (item) => `
+            <tr>
+              <td>${escapeHtml(item.productName)}</td>
+              <td style="text-align:right;">${formatAmount(item.unitCost)}</td>
+              <td style="text-align:right;">${formatQuantity(item.quantity)}</td>
+              <td style="text-align:right;">${formatAmount(item.subtotal)}</td>
+              <td style="text-align:right;">${formatAmount(item.vat)}</td>
+              <td style="text-align:right;">${formatAmount(item.net)}</td>
+            </tr>
+          `,
+        )
+        .join("");
+
+      return `
+        <tr class="so-order-row${isSelected ? " so-order-row--selected" : ""}" data-order-id="${order.id}">
+          <td>
+            <input class="order-card__select" type="checkbox" data-action="toggle-order"${isSelected ? " checked" : ""} aria-label="Select order" />
+          </td>
+          <td><strong>${escapeHtml(refLabel)}</strong></td>
+          <td>${escapeHtml(order.supplierName)}</td>
+          <td>${escapeHtml(order.orderDateLabel)}</td>
+          <td>${order.lineItems.length} line${order.lineItems.length === 1 ? "" : "s"} · ${formatQuantity(order.totalQuantity)} units</td>
+          <td style="text-align:right;"><strong>${formatAmount(order.netTotal)}</strong>${order.vatEnabled ? '<span class="so-vat-badge">VAT</span>' : ""}</td>
+          <td>
+            <div class="so-row-actions">
+              <button class="so-expand-btn" type="button" data-action="expand-order" aria-label="Expand details">
+                <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+              </button>
+              <button class="order-card__compact-delete" type="button" data-action="delete-order" aria-label="Delete order">
+                <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+              </button>
+            </div>
+          </td>
+        </tr>
+        <tr class="so-detail-row so-detail-row--hidden" data-detail-for="${order.id}">
+          <td colspan="7" class="so-detail-cell">
+            <div class="order-card__table-wrap">
+              <table class="order-card__table">
+                <thead>
+                  <tr>
+                    <th>Product</th><th>Unit Cost</th><th>Qty.</th><th>Subtotal</th><th>VAT</th><th>Net</th>
+                  </tr>
+                </thead>
+                <tbody>${itemLineRows}</tbody>
+              </table>
+            </div>
+            <div class="order-card__summary">
+              <div class="order-card__summary-card">
+                <span>Subtotal</span>
+                <strong>${formatAmount(order.subtotal)}</strong>
+              </div>
+              <div class="order-card__summary-card">
+                <span>${order.vatEnabled ? "VAT 18%" : "VAT 0%"}</span>
+                <strong>${formatAmount(order.vatTotal)}</strong>
+              </div>
+              <div class="order-card__summary-card">
+                <span>Total Qty.</span>
+                <strong>${formatQuantity(order.totalQuantity)}</strong>
+              </div>
+              <div class="order-card__summary-card">
+                <span>${order.vatEnabled ? "Net Total Incl VAT" : "Net Total"}</span>
+                <strong>${formatAmount(order.netTotal)}</strong>
               </div>
             </div>
-            <button
-              class="button button--ghost order-card__remove"
-              type="button"
-              data-action="delete-order"
-            >
-              Remove Order
-            </button>
-          </div>
-
-          <div class="order-card__table-wrap">
-            <table class="order-card__table">
-              <thead>
-                <tr>
-                  <th>Product</th>
-                  <th>Unit Cost</th>
-                  <th>Qty.</th>
-                  <th>Total</th>
-                  <th>VAT</th>
-                  <th>Net</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${order.lineItems
-                  .map(
-                    (lineItem) => `
-                      <tr>
-                        <td>${escapeHtml(lineItem.productName)}</td>
-                        <td>${formatAmount(lineItem.unitCost)}</td>
-                        <td>${formatQuantity(lineItem.quantity)}</td>
-                        <td>${formatAmount(lineItem.subtotal)}</td>
-                        <td>${formatAmount(lineItem.vat)}</td>
-                        <td>${formatAmount(lineItem.net)}</td>
-                      </tr>
-                    `,
-                  )
-                  .join("")}
-              </tbody>
-            </table>
-          </div>
-
-          <div class="order-card__summary">
-            <div class="order-card__summary-card">
-              <span>Subtotal</span>
-              <strong>${formatAmount(order.subtotal)}</strong>
-            </div>
-            <div class="order-card__summary-card">
-              <span>${order.vatEnabled ? "VAT 18%" : "VAT 0%"}</span>
-              <strong>${formatAmount(order.vatTotal)}</strong>
-            </div>
-            <div class="order-card__summary-card">
-              <span>Total Qty.</span>
-              <strong>${formatQuantity(order.totalQuantity)}</strong>
-            </div>
-            <div class="order-card__summary-card">
-              <span>${order.vatEnabled ? "Net Total Incl VAT" : "Net Total"}</span>
-              <strong>${formatAmount(order.netTotal)}</strong>
-            </div>
-          </div>
-        </article>
-      `,
-    )
+          </td>
+        </tr>
+      `;
+    })
     .join("");
 }
 
-function truncateTextToWidth(text, font, fontSize, maxWidth) {
-  const normalized = String(text || "").replace(/\s+/g, " ").trim();
 
-  if (!normalized) {
-    return "";
-  }
 
-  if (font.widthOfTextAtSize(normalized, fontSize) <= maxWidth) {
-    return normalized;
-  }
-
-  let truncated = normalized;
-
-  while (truncated.length > 1 && font.widthOfTextAtSize(`${truncated}...`, fontSize) > maxWidth) {
-    truncated = truncated.slice(0, -1).trimEnd();
-  }
-
-  return `${truncated}...`;
-}
-
-function drawTextAtImageCoords(page, text, x, yTop, size, font, maxWidth, align = "left") {
-  const safeText = String(text || "");
-
-  if (!safeText) {
-    return;
-  }
-
-  const { height } = page.getSize();
-  const textWidth = font.widthOfTextAtSize(safeText, size);
-  const drawX =
-    align === "right"
-      ? x - textWidth
-      : align === "center"
-        ? x - textWidth / 2
-        : x;
-
-  page.drawText(safeText, {
-    x: maxWidth ? Math.max(drawX, x - maxWidth) : drawX,
-    y: height - yTop - size,
-    size,
-    font,
-  });
-}
-
-function coverCell(page, left, top, right, bottom, fill = window.PDFLib.rgb(1, 1, 1)) {
-  const { height } = page.getSize();
-
-  page.drawRectangle({
-    x: left + 1,
-    y: height - bottom + 1,
-    width: Math.max(0, right - left - 2),
-    height: Math.max(0, bottom - top - 2),
-    color: fill,
-  });
-}
-
-function drawTextInCell(
-  page,
-  text,
-  left,
-  top,
-  right,
-  bottom,
-  size,
-  font,
-  align = "left",
-  padding = 6,
-) {
-  const safeText = String(text || "");
-
-  if (!safeText) {
-    return;
-  }
-
-  const cellWidth = Math.max(0, right - left);
-  const truncatedText = truncateTextToWidth(
-    safeText,
-    font,
-    size,
-    Math.max(0, cellWidth - padding * 2),
-  );
-  const topOffset = top + Math.max(0, (bottom - top - size) / 2) - 0.5;
-
-  if (align === "right") {
-    drawTextAtImageCoords(page, truncatedText, right - padding, topOffset, size, font, undefined, "right");
-    return;
-  }
-
-  if (align === "center") {
-    drawTextAtImageCoords(
-      page,
-      truncatedText,
-      left + cellWidth / 2,
-      topOffset,
-      size,
-      font,
-      undefined,
-      "center",
-    );
-    return;
-  }
-
-  drawTextAtImageCoords(page, truncatedText, left + padding, topOffset, size, font);
-}
-
-function chunkArray(items, chunkSize) {
-  const chunks = [];
-
-  for (let index = 0; index < items.length; index += chunkSize) {
-    chunks.push(items.slice(index, index + chunkSize));
-  }
-
-  return chunks;
-}
-
-function buildGrnNotes(orders) {
-  const notes = [];
-
-  orders.forEach((order, orderIndex) => {
-    const chunks = chunkArray(order.lineItems, GRN_ROWS_PER_NOTE);
-
-    chunks.forEach((lineItems, chunkIndex) => {
-      const stampSource = (order.orderDateValue || toInputDate(new Date())).replaceAll("-", "");
-      const noteSubtotal = roundCurrency(
-        lineItems.reduce((sum, lineItem) => sum + Number(lineItem.subtotal || 0), 0),
-      );
-
-      notes.push({
-        supplierName: order.supplierName,
-        dateLabel: order.orderDateValue ? order.orderDateLabel : formatDisplayDate(toInputDate(new Date())),
-        invoiceNo: order.reference || "",
-        grnNo: `GRN-${stampSource.slice(2)}-${String(notes.length + 1).padStart(3, "0")}`,
-        lineItems,
-        noteSubtotal,
-        orderIndex,
-        chunkIndex,
-      });
-    });
-  });
-
-  return notes;
-}
-
-function drawGrnNote(page, note, slotIndex, fonts, baseYOffset = 0) {
-  const yOffset = baseYOffset + slotIndex * GRN_NOTE_VERTICAL_OFFSET;
-  const rowCells = [
-    [281, 295],
-    [295, 308],
-    [308, 321],
-    [321, 334],
-    [334, 347],
-    [347, 360],
-  ].map(([top, bottom]) => [top + yOffset, bottom + yOffset]);
-  const textSize = 8.4;
-  const rowTextSize = 8.2;
-
-  coverCell(page, 116, 217 + yOffset, 334, 230 + yOffset);
-  drawTextInCell(
-    page,
-    note.dateLabel,
-    116,
-    217 + yOffset,
-    334,
-    230 + yOffset,
-    textSize,
-    fonts.bodyBold,
-    "center",
-    8,
-  );
-  drawTextInCell(
-    page,
-    note.supplierName,
-    116,
-    230 + yOffset,
-    449,
-    243 + yOffset,
-    textSize,
-    fonts.body,
-    "left",
-    8,
-  );
-  drawTextInCell(
-    page,
-    note.grnNo,
-    383,
-    204 + yOffset,
-    449,
-    217 + yOffset,
-    7.9,
-    fonts.bodyBold,
-    "left",
-    5,
-  );
-  drawTextInCell(
-    page,
-    note.invoiceNo,
-    383,
-    217 + yOffset,
-    449,
-    230 + yOffset,
-    7.9,
-    fonts.body,
-    "left",
-    5,
-  );
-
-  note.lineItems.forEach((lineItem, index) => {
-    const [rowTop, rowBottom] = rowCells[index];
-
-    drawTextInCell(
-      page,
-      lineItem.productName,
-      116,
-      rowTop,
-      271,
-      rowBottom,
-      rowTextSize,
-      fonts.body,
-      "left",
-      6,
-    );
-    drawTextInCell(
-      page,
-      formatQuantity(lineItem.quantity),
-      271,
-      rowTop,
-      315,
-      rowBottom,
-      rowTextSize,
-      fonts.body,
-      "center",
-      4,
-    );
-    drawTextInCell(
-      page,
-      formatQuantity(lineItem.quantity),
-      315,
-      rowTop,
-      358,
-      rowBottom,
-      rowTextSize,
-      fonts.body,
-      "center",
-      4,
-    );
-    drawTextInCell(
-      page,
-      formatAmount(lineItem.unitCost),
-      391,
-      rowTop,
-      441,
-      rowBottom,
-      rowTextSize,
-      fonts.body,
-      "right",
-      6,
-    );
-    drawTextInCell(
-      page,
-      formatAmount(lineItem.subtotal),
-      441,
-      rowTop,
-      516,
-      rowBottom,
-      rowTextSize,
-      fonts.body,
-      "right",
-      6,
-    );
-  });
-
-  drawTextInCell(
-    page,
-    formatAmount(note.noteSubtotal),
-    441,
-    360 + yOffset,
-    516,
-    373 + yOffset,
-    8.4,
-    fonts.bodyBold,
-    "right",
-    6,
-  );
-}
-
-async function generateSelectedGrnPdf() {
-  const selectedOrders = getSelectedOrders();
-
-  if (!selectedOrders.length) {
-    window.alert("Select at least one supplier order to generate the GRN.");
-    return;
-  }
-
-  if (!window.PDFLib || !window.MEDIVEX_GRN_TEMPLATE_DATA_URL) {
-    window.alert("The GRN template is not available.");
-    return;
-  }
-
-  setButtonBusy(refs.generateSelectedGrn, true, "Generate GRN", "Generating GRN...");
-
+async function loadOrders() {
   try {
-    const templateBytes = bytesFromDataUrl(window.MEDIVEX_GRN_TEMPLATE_DATA_URL);
-    const templateDoc = await window.PDFLib.PDFDocument.load(templateBytes);
-    const grnNotes = buildGrnNotes(selectedOrders);
-    const outputDoc = await window.PDFLib.PDFDocument.create();
-    const fonts = {
-      body: await outputDoc.embedFont(window.PDFLib.StandardFonts.Helvetica),
-      bodyBold: await outputDoc.embedFont(window.PDFLib.StandardFonts.HelveticaBold),
-    };
+    const result = await db
+      .from("supplier_orders")
+      .select("*, supplier_order_items(*)")
+      .order("created_at", { ascending: false });
 
-    const templatePage = templateDoc.getPage(0);
-    const { width: pageWidth, height: pageHeight } = templatePage.getSize();
-    const halfHeight = pageHeight / 2;
-    const topMargin = Math.round(GRN_TOP_BLANK / 2);
-    const embeddedGrn = await outputDoc.embedPage(templatePage, {
-      left: 0,
-      bottom: halfHeight,
-      right: pageWidth,
-      top: pageHeight - GRN_TOP_BLANK,
-    });
+    if (result.error) throw result.error;
 
-    for (let index = 0; index < grnNotes.length; index += 2) {
-      const page = outputDoc.addPage([pageWidth, pageHeight]);
-      const topNote = grnNotes[index];
-      const bottomNote = grnNotes[index + 1] || null;
+    state.orders = (result.data || []).map((row) => ({
+      id: row.id,
+      supplierName: row.supplier_name,
+      catalogSupplier: row.catalog_supplier,
+      orderDateValue: row.order_date,
+      orderDateLabel: formatDisplayDate(row.order_date),
+      reference: row.reference || "",
+      vatEnabled: row.vat_enabled,
+      lineItems: (row.supplier_order_items || []).map((item) => ({
+        productName: item.product_name,
+        unitCost: Number(item.unit_cost),
+        quantity: item.quantity,
+        subtotal: Number(item.subtotal),
+        vat: Number(item.vat),
+        net: Number(item.net),
+      })),
+      subtotal: Number(row.subtotal),
+      vatTotal: Number(row.vat_total),
+      netTotal: Number(row.net_total),
+      totalQuantity: row.total_quantity,
+      grnId: row.grn_id,
+      createdAt: row.created_at,
+    }));
 
-      page.drawPage(embeddedGrn, { x: 0, y: halfHeight + topMargin });
-      drawGrnNote(page, topNote, 0, fonts, -topMargin);
-
-      if (bottomNote) {
-        page.drawPage(embeddedGrn, { x: 0, y: topMargin });
-        drawGrnNote(page, bottomNote, 1, fonts, -topMargin);
-      }
-
-      page.drawLine({
-        start: { x: 0, y: halfHeight },
-        end: { x: pageWidth, y: halfHeight },
-        thickness: 0.5,
-        color: window.PDFLib.rgb(0.5, 0.5, 0.5),
-        dashArray: [4, 4],
-        dashPhase: 0,
-      });
-    }
-
-    const pdfBytes = await outputDoc.save();
-    const blob = new Blob([pdfBytes], { type: "application/pdf" });
-    const downloadUrl = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    const fileLabel =
-      selectedOrders.length === 1
-        ? `${selectedOrders[0].supplierName}-grn`
-        : `medivex-grn-batch-${selectedOrders.length}`;
-
-    link.href = downloadUrl;
-    link.download = `${sanitizeFilename(fileLabel)}.pdf`;
-    link.click();
-    window.setTimeout(() => URL.revokeObjectURL(downloadUrl), 1500);
-  } catch (error) {
-    console.error(error);
-    window.alert("The GRN could not be generated. Please try again.");
-  } finally {
-    setButtonBusy(refs.generateSelectedGrn, false, "Generate GRN", "Generating GRN...");
+    renderSupplierOrdersList();
+  } catch (err) {
+    console.error("Failed to load supplier orders:", err);
+    refs.supplierOrdersList.innerHTML = `
+      <div class="orders-empty">
+        Could not load supplier orders. Please refresh the page.
+      </div>
+    `;
   }
 }
 
@@ -919,7 +574,7 @@ function resetSupplierOrderForm() {
   syncSupplierUi();
 }
 
-function saveSupplierOrder() {
+async function saveSupplierOrder() {
   const draft = getSupplierOrderDraft();
 
   if (!draft.supplierMeta) {
@@ -932,24 +587,46 @@ function saveSupplierOrder() {
     return;
   }
 
-  state.orders.unshift({
-    id: `SO-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-    supplierName: draft.supplierName,
-    catalogSupplier: draft.supplierMeta.catalogSupplier,
-    orderDateValue: draft.orderDateValue,
-    orderDateLabel: draft.orderDateLabel,
-    reference: draft.reference,
-    vatEnabled: draft.vatEnabled,
-    lineItems: draft.lineItems,
-    subtotal: draft.subtotal,
-    vatTotal: draft.vatTotal,
-    netTotal: draft.netTotal,
-    totalQuantity: draft.totalQuantity,
-    createdAt: new Date().toISOString(),
-  });
+  setButtonBusy(refs.saveSupplierOrder, true, "Add Supplier Order", "Saving...");
 
-  resetSupplierOrderForm();
-  renderSupplierOrdersList();
+  try {
+    const orderRes = await db.from("supplier_orders").insert([{
+      supplier_name: draft.supplierName,
+      catalog_supplier: draft.supplierMeta.catalogSupplier,
+      order_date: draft.orderDateValue || null,
+      reference: draft.reference || null,
+      vat_enabled: draft.vatEnabled,
+      subtotal: draft.subtotal,
+      vat_total: draft.vatTotal,
+      net_total: draft.netTotal,
+      total_quantity: draft.totalQuantity,
+    }]).select("id");
+
+    if (orderRes.error) throw orderRes.error;
+
+    const orderId = orderRes.data[0].id;
+    const itemsRes = await db.from("supplier_order_items").insert(
+      draft.lineItems.map((item) => ({
+        order_id: orderId,
+        product_name: item.productName,
+        unit_cost: item.unitCost,
+        quantity: item.quantity,
+        subtotal: item.subtotal,
+        vat: item.vat,
+        net: item.net,
+      }))
+    );
+
+    if (itemsRes.error) throw itemsRes.error;
+
+    resetSupplierOrderForm();
+    await loadOrders();
+  } catch (err) {
+    console.error("Failed to save supplier order:", err);
+    window.alert("Could not save the order. Please try again.");
+  } finally {
+    setButtonBusy(refs.saveSupplierOrder, false, "Add Supplier Order", "Saving...");
+  }
 }
 
 function selectAllOrders() {
@@ -962,10 +639,18 @@ function clearSelectedOrders() {
   renderSupplierOrdersList();
 }
 
-function deleteSelectedOrders() {
-  const selectedCount = getSelectedOrdersCount();
+async function deleteSelectedOrders() {
+  const selectedIds = [...state.selectedOrderIds];
 
-  if (!selectedCount) {
+  if (!selectedIds.length) {
+    return;
+  }
+
+  const res = await db.from("supplier_orders").delete().in("id", selectedIds);
+
+  if (res.error) {
+    console.error("Failed to delete orders:", res.error);
+    window.alert("Could not delete orders. Please try again.");
     return;
   }
 
@@ -999,9 +684,6 @@ refs.deleteSelectedOrders.addEventListener("click", () => {
   deleteSelectedOrders();
 });
 
-refs.generateSelectedGrn.addEventListener("click", () => {
-  generateSelectedGrnPdf();
-});
 
 refs.supplierName.addEventListener("change", () => {
   state.lineItems = [createSupplierLineItem()];
@@ -1074,12 +756,24 @@ refs.supplierLineItems.addEventListener("click", (event) => {
   syncSupplierUi();
 });
 
-refs.supplierOrdersList.addEventListener("click", (event) => {
+refs.supplierOrdersList.addEventListener("click", async (event) => {
+  const expandBtn = event.target.closest('[data-action="expand-order"]');
+
+  if (expandBtn) {
+    const row = expandBtn.closest("[data-order-id]");
+    const orderId = row ? row.dataset.orderId : null;
+    if (!orderId) return;
+    const detailRow = refs.supplierOrdersList.querySelector(`[data-detail-for="${orderId}"]`);
+    if (detailRow) detailRow.classList.toggle("so-detail-row--hidden");
+    expandBtn.classList.toggle("so-expand-btn--open");
+    return;
+  }
+
   const toggleInput = event.target.closest('[data-action="toggle-order"]');
 
   if (toggleInput) {
-    const orderCard = toggleInput.closest("[data-order-id]");
-    const orderId = orderCard ? orderCard.dataset.orderId : "";
+    const row = toggleInput.closest("[data-order-id]");
+    const orderId = row ? Number(row.dataset.orderId) : null;
 
     if (!orderId) {
       return;
@@ -1101,13 +795,23 @@ refs.supplierOrdersList.addEventListener("click", (event) => {
     return;
   }
 
-  const orderCard = deleteButton.closest("[data-order-id]");
-  const orderId = orderCard ? orderCard.dataset.orderId : "";
+  const row = deleteButton.closest("[data-order-id]");
+  const orderId = row ? Number(row.dataset.orderId) : null;
+
+  if (!orderId) return;
+
+  const res = await db.from("supplier_orders").delete().eq("id", orderId);
+
+  if (res.error) {
+    console.error("Failed to delete order:", res.error);
+    window.alert("Could not remove order. Please try again.");
+    return;
+  }
 
   state.orders = state.orders.filter((order) => order.id !== orderId);
   renderSupplierOrdersList();
 });
 
-renderSupplierOptions();
+loadSuppliersForForm();
 resetSupplierOrderForm();
-renderSupplierOrdersList();
+loadOrders();

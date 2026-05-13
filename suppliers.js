@@ -1,14 +1,14 @@
 (function () {
   var db = window.MVB_DB;
-  var allCustomers = [];
+  var allSuppliers = [];
   var addingNew = false;
   var searchQuery = '';
-  var sortField = 'contact';
+  var sortField = 'name';
   var sortDir = 'asc';
 
-  var tbody = document.getElementById('customers-tbody');
-  var searchInput = document.getElementById('customers-search');
-  var btnAdd = document.getElementById('btn-add-customer');
+  var tbody = document.getElementById('suppliers-tbody');
+  var searchInput = document.getElementById('suppliers-search');
+  var btnAdd = document.getElementById('btn-add-supplier');
 
   function esc(str) {
     return String(str == null ? '' : str)
@@ -20,7 +20,7 @@
 
   // ── Sort ──────────────────────────────────────────────────────────
 
-  function sortedCustomers(list) {
+  function sortedSuppliers(list) {
     return list.slice().sort(function (a, b) {
       var av = a[sortField] || '';
       var bv = b[sortField] || '';
@@ -43,12 +43,12 @@
 
   function render() {
     var q = searchQuery.toLowerCase();
-    var filtered = sortedCustomers(allCustomers.filter(function (c) {
+    var filtered = sortedSuppliers(allSuppliers.filter(function (s) {
       return (
         !q ||
-        (c.contact && c.contact.toLowerCase().indexOf(q) !== -1) ||
-        (c.client && c.client.toLowerCase().indexOf(q) !== -1) ||
-        (c.phone && c.phone.toLowerCase().indexOf(q) !== -1)
+        (s.name && s.name.toLowerCase().indexOf(q) !== -1) ||
+        (s.contact && s.contact.toLowerCase().indexOf(q) !== -1) ||
+        (s.phone && s.phone.toLowerCase().indexOf(q) !== -1)
       );
     }));
 
@@ -56,31 +56,31 @@
 
     if (addingNew) {
       html +=
-        '<tr class="pdash-new-row" id="new-customer-row">' +
-        '<td><input class="pdash-cell-input" id="new-client" type="text" placeholder="Client / business name *" autocomplete="off"></td>' +
+        '<tr class="pdash-new-row" id="new-supplier-row">' +
+        '<td><input class="pdash-cell-input" id="new-name" type="text" placeholder="Supplier name *" autocomplete="off"></td>' +
         '<td><input class="pdash-cell-input" id="new-contact" type="text" placeholder="Contact person (optional)" autocomplete="off"></td>' +
         '<td><input class="pdash-cell-input" id="new-phone" type="tel" placeholder="Phone (optional)" autocomplete="off"></td>' +
         '<td><div class="pdash-row-actions">' +
-          '<button class="pdash-add-confirm-btn" id="confirm-add-customer">Add</button>' +
-          '<button class="pdash-cancel-add-btn" id="cancel-add-customer">&#x2715;</button>' +
+          '<button class="pdash-add-confirm-btn" id="confirm-add-supplier">Add</button>' +
+          '<button class="pdash-cancel-add-btn" id="cancel-add-supplier">&#x2715;</button>' +
         '</div></td>' +
         '</tr>';
     }
 
     for (var i = 0; i < filtered.length; i++) {
-      var c = filtered[i];
+      var s = filtered[i];
       html +=
-        '<tr data-id="' + c.id + '">' +
-        '<td><strong>' + esc(c.client) + '</strong></td>' +
-        '<td>' + esc(c.contact || '—') + '</td>' +
-        '<td>' + esc(c.phone || '—') + '</td>' +
-        '<td><button class="pdash-delete-btn" data-id="' + c.id + '" title="Delete">&#x2715;</button></td>' +
+        '<tr data-id="' + s.id + '">' +
+        '<td><strong>' + esc(s.name) + '</strong></td>' +
+        '<td>' + esc(s.contact || '—') + '</td>' +
+        '<td>' + esc(s.phone || '—') + '</td>' +
+        '<td><button class="pdash-delete-btn" data-id="' + s.id + '" title="Delete">&#x2715;</button></td>' +
         '</tr>';
     }
 
     if (!addingNew && filtered.length === 0) {
       html = '<tr><td colspan="4" class="pdash-empty">' +
-        (allCustomers.length === 0 ? 'No customers yet. Click "+ Add Customer" to create the first one.' : 'No customers match your search.') +
+        (allSuppliers.length === 0 ? 'No suppliers yet. Click "+ Add Supplier" to create the first one.' : 'No suppliers match your search.') +
         '</td></tr>';
     }
 
@@ -94,16 +94,16 @@
   function attachListeners() {
     tbody.querySelectorAll('.pdash-delete-btn').forEach(function (btn) {
       btn.addEventListener('click', function () {
-        deleteCustomer(parseInt(this.dataset.id));
+        deleteSupplier(parseInt(this.dataset.id));
       });
     });
 
-    var confirmBtn = document.getElementById('confirm-add-customer');
-    var cancelBtn = document.getElementById('cancel-add-customer');
+    var confirmBtn = document.getElementById('confirm-add-supplier');
+    var cancelBtn = document.getElementById('cancel-add-supplier');
     if (confirmBtn) confirmBtn.addEventListener('click', confirmAdd);
     if (cancelBtn) cancelBtn.addEventListener('click', cancelAdd);
 
-    var newRow = document.getElementById('new-customer-row');
+    var newRow = document.getElementById('new-supplier-row');
     if (newRow) {
       newRow.querySelectorAll('input').forEach(function (input) {
         input.addEventListener('keydown', function (e) {
@@ -111,8 +111,8 @@
           if (e.key === 'Escape') cancelAdd();
         });
       });
-      var clientInput = document.getElementById('new-client');
-      if (clientInput) setTimeout(function () { clientInput.focus(); }, 0);
+      var nameInput = document.getElementById('new-name');
+      if (nameInput) setTimeout(function () { nameInput.focus(); }, 0);
     }
   }
 
@@ -125,73 +125,73 @@
   }
 
   async function confirmAdd() {
-    var clientEl = document.getElementById('new-client');
+    var nameEl = document.getElementById('new-name');
     var contactEl = document.getElementById('new-contact');
     var phoneEl = document.getElementById('new-phone');
 
-    var client = clientEl ? clientEl.value.trim() : '';
+    var name = nameEl ? nameEl.value.trim() : '';
     var contact = contactEl ? contactEl.value.trim() : '';
     var phone = phoneEl ? phoneEl.value.trim() : '';
 
-    if (!client) {
-      if (clientEl) { clientEl.focus(); clientEl.style.outline = '2px solid #c82828'; }
+    if (!name) {
+      if (nameEl) { nameEl.focus(); nameEl.style.outline = '2px solid #c82828'; }
       return;
     }
 
-    var confirmBtn = document.getElementById('confirm-add-customer');
-    var cancelBtn = document.getElementById('cancel-add-customer');
+    var confirmBtn = document.getElementById('confirm-add-supplier');
+    var cancelBtn = document.getElementById('cancel-add-supplier');
     if (confirmBtn) confirmBtn.disabled = true;
     if (confirmBtn) confirmBtn.textContent = '…';
     if (cancelBtn) cancelBtn.disabled = true;
 
     try {
-      var result = await db.from('customers').insert([{
-        client: client,
+      var result = await db.from('suppliers').insert([{
+        name: name,
         contact: contact || null,
         phone: phone || null,
       }]).select('*');
 
       if (result.error) throw result.error;
 
-      allCustomers.push(result.data[0]);
+      allSuppliers.push(result.data[0]);
       addingNew = false;
       btnAdd.disabled = false;
       render();
     } catch (err) {
-      console.error('Failed to add customer:', err);
+      console.error('Failed to add supplier:', err);
       if (confirmBtn) { confirmBtn.disabled = false; confirmBtn.textContent = 'Add'; }
       if (cancelBtn) cancelBtn.disabled = false;
-      window.alert('Could not save customer. Please try again.');
+      window.alert('Could not save supplier. Please try again.');
     }
   }
 
   // ── Delete ────────────────────────────────────────────────────────
 
-  async function deleteCustomer(id) {
-    if (!window.confirm('Remove this customer from the directory?')) return;
+  async function deleteSupplier(id) {
+    if (!window.confirm('Remove this supplier from the directory?')) return;
     try {
-      var result = await db.from('customers').delete().eq('id', id);
+      var result = await db.from('suppliers').delete().eq('id', id);
       if (result.error) throw result.error;
-      allCustomers = allCustomers.filter(function (c) { return c.id !== id; });
+      allSuppliers = allSuppliers.filter(function (s) { return s.id !== id; });
       render();
     } catch (err) {
-      console.error('Failed to delete customer:', err);
-      window.alert('Could not remove customer. Please try again.');
+      console.error('Failed to delete supplier:', err);
+      window.alert('Could not remove supplier. Please try again.');
     }
   }
 
   // ── Load ──────────────────────────────────────────────────────────
 
-  async function loadCustomers() {
+  async function loadSuppliers() {
     tbody.innerHTML = '<tr><td colspan="4" class="pdash-empty">Loading…</td></tr>';
     try {
-      var result = await db.from('customers').select('*').order('contact');
+      var result = await db.from('suppliers').select('*').order('name');
       if (result.error) throw result.error;
-      allCustomers = result.data || [];
+      allSuppliers = result.data || [];
       render();
     } catch (err) {
-      console.error('Failed to load customers:', err);
-      tbody.innerHTML = '<tr><td colspan="4" class="pdash-empty">Could not load customers. Please refresh.</td></tr>';
+      console.error('Failed to load suppliers:', err);
+      tbody.innerHTML = '<tr><td colspan="4" class="pdash-empty">Could not load suppliers. Please refresh.</td></tr>';
     }
   }
 
@@ -222,5 +222,5 @@
     });
   });
 
-  loadCustomers();
+  loadSuppliers();
 })();
