@@ -3114,6 +3114,17 @@ button {
   color: #dc2626;
 }
 
+/* ── Stock levels ────────────────────────────────────────────────── */
+.sl-stock--low  { color: #d97706; }
+.sl-stock--empty { color: #dc2626; }
+
+.sl-metric--warn   { color: #d97706; }
+.sl-metric--danger { color: #dc2626; }
+
+/* Hide manual save buttons for users who cannot edit stock */
+body.is-admin  .sl-save-btn,
+body.is-locked .sl-save-btn { display: none !important; }
+
 /* ── Inbound card footer ─────────────────────────────────────────── */
 .inbound-card__footer {
   display: flex;

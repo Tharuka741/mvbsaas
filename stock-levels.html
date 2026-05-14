@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Medivex Inbound</title>
+    <title>Medivex Stock Levels</title>
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body style="visibility:hidden">
@@ -57,7 +57,7 @@
           </a>
 
           <p class="sidebar__section-label" data-power-only>Inventory</p>
-          <a class="sidebar__link sidebar__link--active" href="inbound.html" data-power-only>
+          <a class="sidebar__link" href="inbound.html" data-power-only>
             <svg class="sidebar__link-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>
             Inbound
           </a>
@@ -65,7 +65,7 @@
             <svg class="sidebar__link-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><line x1="16.5" y1="9.4" x2="7.5" y2="4.21"/><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
             Products
           </a>
-          <a class="sidebar__link" href="stock-levels.html" data-power-only>
+          <a class="sidebar__link sidebar__link--active" href="stock-levels.html" data-power-only>
             <svg class="sidebar__link-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
             Stock levels
           </a>
@@ -91,32 +91,59 @@
 
       <!-- ── Main ─────────────────────────────────────────────────── -->
       <div class="erp-main">
-        <div class="grn-shell">
+        <div class="pdash-shell">
 
-          <!-- Page header -->
           <div class="pdash-header">
             <div class="pdash-header__copy">
-              <p class="eyebrow">Purchasing</p>
-              <h1>Inbound</h1>
-              <p>GRNs awaiting confirmation. Review each delivery and confirm to update stock levels.</p>
+              <p class="eyebrow">Inventory</p>
+              <h1>Stock Levels</h1>
+              <p>Current stock for all products. Unlock Master Control to manually adjust quantities.</p>
             </div>
           </div>
 
-          <!-- Pending GRNs -->
-          <div class="grn-section">
-            <div class="grn-section-hd">
-              <div>
-                <p class="section-kicker">Awaiting Confirmation</p>
-                <h2>Pending GRNs</h2>
-              </div>
-              <article class="summary-card grn-reg-metric">
-                <span>Pending GRNs</span>
-                <strong id="inbound-pending-count">—</strong>
-              </article>
+          <!-- Summary metrics -->
+          <div class="grn-metrics" style="margin-bottom: 20px;">
+            <article class="summary-card">
+              <span>Total Products</span>
+              <strong id="sl-total-products">—</strong>
+            </article>
+            <article class="summary-card">
+              <span>Total Units in Stock</span>
+              <strong id="sl-total-units">—</strong>
+            </article>
+            <article class="summary-card">
+              <span>Low Stock (&lt; 10)</span>
+              <strong id="sl-low-stock" class="sl-metric--warn">—</strong>
+            </article>
+            <article class="summary-card">
+              <span>Out of Stock</span>
+              <strong id="sl-out-of-stock" class="sl-metric--danger">—</strong>
+            </article>
+          </div>
+
+          <div class="pdash-panel">
+            <div class="pdash-toolbar">
+              <input
+                class="pdash-search"
+                id="sl-search"
+                type="search"
+                placeholder="Filter by product name or supplier…"
+                autocomplete="off"
+              />
             </div>
 
-            <div id="inbound-grn-list" class="orders-list">
-              <div class="orders-empty">Loading…</div>
+            <div class="pdash-table-wrap">
+              <table class="pdash-table">
+                <thead>
+                  <tr>
+                    <th>Product</th>
+                    <th>Supplier</th>
+                    <th style="text-align:right;">Stock Qty</th>
+                    <th style="width:90px;"></th>
+                  </tr>
+                </thead>
+                <tbody id="sl-tbody"></tbody>
+              </table>
             </div>
           </div>
 
@@ -128,7 +155,6 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="supabase-config.js"></script>
     <script src="auth.js"></script>
-    <script src="grn-pdf.js"></script>
-    <script src="inbound.js"></script>
+    <script src="stock-levels.js"></script>
   </body>
 </html>

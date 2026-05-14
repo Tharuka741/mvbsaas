@@ -375,6 +375,27 @@ function syncUi() {
 async function saveCustomerOrder(invoiceData) {
   try {
     const db = window.MVB_DB;
+
+    // Check stock availability before inserting the order
+    const shortfalls = [];
+    for (const item of invoiceData.lineItems) {
+      const needed = item.quantity + (item.foc || 0);
+      if (needed <= 0) continue;
+      const fetchRes = await db.from('products').select('id, name, stock_quantity').eq('name', item.product.name);
+      if (fetchRes.error || !fetchRes.data || !fetchRes.data.length) continue;
+      const available = fetchRes.data[0].stock_quantity || 0;
+      if (available < needed) {
+        shortfalls.push({ name: item.product.name, available, needed });
+      }
+    }
+    if (shortfalls.length) {
+      const lines = shortfalls.map(function (s) {
+        return '• ' + s.name + ': need ' + s.needed + ', have ' + s.available;
+      });
+      window.alert('Insufficient stock for the following items:\n\n' + lines.join('\n') + '\n\nPlease adjust quantities or replenish stock before saving.');
+      return;
+    }
+
     const result = await db.from('customer_orders').insert([{
       order_number: invoiceData.invoiceNumber,
       invoice_number: invoiceData.invoiceNumber,
@@ -402,6 +423,20 @@ async function saveCustomerOrder(invoiceData) {
         amount: item.amount,
       }))
     );
+
+    // Deduct stock for each line item (quantity sold + free-of-charge units both leave the warehouse)
+    for (const item of invoiceData.lineItems) {
+      const reduceBy = item.quantity + (item.foc || 0);
+      if (reduceBy <= 0) continue;
+      const fetchRes = await db.from('products').select('id, stock_quantity').eq('name', item.product.name);
+      if (!fetchRes.error && fetchRes.data) {
+        for (const prod of fetchRes.data) {
+          await db.from('products').update({
+            stock_quantity: (prod.stock_quantity || 0) - reduceBy,
+          }).eq('id', prod.id);
+        }
+      }
+    }
   } catch (err) {
     console.error('Error saving customer order:', err);
   }
