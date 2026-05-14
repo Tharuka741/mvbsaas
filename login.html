@@ -125,6 +125,7 @@
         </div>
       </div>
 
+      <!-- Sign-in form (default) -->
       <form class="login-form" id="login-form" autocomplete="on">
         <div class="login-field">
           <label for="login-email">Email</label>
@@ -137,14 +138,74 @@
         <p class="login-error" id="login-error"></p>
         <button class="login-btn" id="login-btn" type="submit">Sign in</button>
       </form>
+
+      <!-- Set-password form (shown when arriving via invite link) -->
+      <form class="login-form" id="set-password-form" style="display:none" autocomplete="off">
+        <p style="font-size:0.82rem;color:var(--text-muted,#888);text-align:center;margin:0 0 4px;">
+          Welcome! Set a password to activate your account.
+        </p>
+        <div class="login-field">
+          <label for="new-password">New password</label>
+          <input id="new-password" type="password" placeholder="At least 8 characters" required minlength="8" />
+        </div>
+        <div class="login-field">
+          <label for="confirm-password">Confirm password</label>
+          <input id="confirm-password" type="password" placeholder="Repeat password" required minlength="8" />
+        </div>
+        <p class="login-error" id="set-password-error"></p>
+        <button class="login-btn" id="set-password-btn" type="submit">Set password &amp; sign in</button>
+      </form>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="supabase-config.js"></script>
     <script>
       (async function () {
-        // Already signed in — go straight to dashboard
-        var res = await window.MVB_DB.auth.getSession();
+        var db = window.MVB_DB;
+
+        // ── Invite flow: URL contains #access_token&type=invite ───────
+        var hash = new URLSearchParams(window.location.hash.slice(1));
+        if (hash.get('type') === 'invite') {
+          // Supabase JS v2 automatically exchanges the hash tokens into a session
+          await db.auth.getSession(); // triggers token exchange
+
+          document.getElementById('login-form').style.display = 'none';
+          document.getElementById('set-password-form').style.display = 'flex';
+
+          var spForm  = document.getElementById('set-password-form');
+          var spBtn   = document.getElementById('set-password-btn');
+          var spErr   = document.getElementById('set-password-error');
+          var newPass = document.getElementById('new-password');
+          var confPass= document.getElementById('confirm-password');
+
+          spForm.addEventListener('submit', async function (e) {
+            e.preventDefault();
+            spErr.textContent = '';
+
+            if (newPass.value !== confPass.value) {
+              spErr.textContent = 'Passwords do not match.';
+              return;
+            }
+
+            spBtn.disabled = true;
+            spBtn.textContent = 'Saving…';
+
+            var result = await db.auth.updateUser({ password: newPass.value });
+
+            if (result.error) {
+              spErr.textContent = result.error.message || 'Could not set password. Please try again.';
+              spBtn.disabled = false;
+              spBtn.textContent = 'Set password & sign in';
+              return;
+            }
+
+            window.location.replace('index.html');
+          });
+          return;
+        }
+
+        // ── Normal flow ───────────────────────────────────────────────
+        var res = await db.auth.getSession();
         if (res.data.session) {
           window.location.replace('index.html');
           return;
@@ -162,7 +223,7 @@
           btn.disabled = true;
           btn.textContent = 'Signing in…';
 
-          var result = await window.MVB_DB.auth.signInWithPassword({
+          var result = await db.auth.signInWithPassword({
             email:    emailEl.value.trim(),
             password: passEl.value,
           });

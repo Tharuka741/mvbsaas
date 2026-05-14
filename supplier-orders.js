@@ -459,7 +459,10 @@ function renderSupplierOrdersList() {
           <td>
             <input class="order-card__select" type="checkbox" data-action="toggle-order"${isSelected ? " checked" : ""} aria-label="Select order" />
           </td>
-          <td><strong>${escapeHtml(refLabel)}</strong></td>
+          <td>
+            <strong>${escapeHtml(refLabel)}</strong>
+            ${order.grnRemark ? `<span class="so-vat-badge so-vat-badge--rejected">${escapeHtml(order.grnRemark)}</span>` : ''}
+          </td>
           <td>${escapeHtml(order.supplierName)}</td>
           <td>${escapeHtml(order.orderDateLabel)}</td>
           <td>${order.lineItems.length} line${order.lineItems.length === 1 ? "" : "s"} · ${formatQuantity(order.totalQuantity)} units</td>
@@ -518,7 +521,7 @@ async function loadOrders() {
   try {
     const result = await db
       .from("supplier_orders")
-      .select("*, supplier_order_items(*)")
+      .select("*, supplier_order_items(*), grns(status)")
       .order("created_at", { ascending: false });
 
     if (result.error) throw result.error;
@@ -544,6 +547,8 @@ async function loadOrders() {
       netTotal: Number(row.net_total),
       totalQuantity: row.total_quantity,
       grnId: row.grn_id,
+      grnRemark: row.grn_remark || '',
+      grnStatus: row.grns ? row.grns.status : null,
       createdAt: row.created_at,
     }));
 
@@ -643,6 +648,16 @@ async function deleteSelectedOrders() {
   const selectedIds = [...state.selectedOrderIds];
 
   if (!selectedIds.length) {
+    return;
+  }
+
+  const confirmed = state.orders.filter(
+    (o) => selectedIds.includes(o.id) && o.grnStatus === "confirmed"
+  );
+  if (confirmed.length) {
+    window.alert(
+      `${confirmed.length} order${confirmed.length === 1 ? "" : "s"} cannot be deleted because their GRN has already been confirmed. Remove confirmed orders from the selection and try again.`
+    );
     return;
   }
 
@@ -799,6 +814,12 @@ refs.supplierOrdersList.addEventListener("click", async (event) => {
   const orderId = row ? Number(row.dataset.orderId) : null;
 
   if (!orderId) return;
+
+  const orderToDelete = state.orders.find((o) => o.id === orderId);
+  if (orderToDelete && orderToDelete.grnStatus === "confirmed") {
+    window.alert("This order cannot be deleted because its GRN has already been confirmed. Confirmed GRNs are part of the stock record.");
+    return;
+  }
 
   const res = await db.from("supplier_orders").delete().eq("id", orderId);
 

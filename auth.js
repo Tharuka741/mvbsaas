@@ -1,5 +1,5 @@
 (async function () {
-  var RESTRICTED_PAGES = ['product-dashboard.html', 'suppliers.html', 'customers.html'];
+  var RESTRICTED_PAGES = ['product-dashboard.html', 'inbound.html'];
   var ADMIN_LANDING    = 'invoice-generator.html';
 
   // ── Session check ─────────────────────────────────────────────────
@@ -63,6 +63,8 @@
 
   // ── Admin restrictions ────────────────────────────────────────────
   if (role === 'admin') {
+    document.body.classList.add('is-admin');
+
     document.querySelectorAll('[data-power-only]').forEach(function (el) {
       el.style.display = 'none';
     });
@@ -79,6 +81,81 @@
     await window.MVB_DB.auth.signOut();
     window.location.replace('login.html');
     return;
+  }
+
+  // ── Master Control Access (power users only) ──────────────────────
+  if (role !== 'admin') {
+    var MCA_KEY = 'mvb_mca_unlocked';
+
+    function showMcaToast(userName) {
+      var existing = document.querySelector('.mca-toast');
+      if (existing) existing.parentNode.removeChild(existing);
+
+      var toast = document.createElement('div');
+      toast.className = 'mca-toast';
+      toast.innerHTML =
+        '<p class="mca-toast__title">Master Control Access Unlocked</p>' +
+        '<p class="mca-toast__sub">Welcome ' + String(userName || '').replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</p>';
+      document.body.appendChild(toast);
+
+      requestAnimationFrame(function () {
+        requestAnimationFrame(function () {
+          toast.classList.add('mca-toast--visible');
+        });
+      });
+
+      setTimeout(function () {
+        toast.classList.remove('mca-toast--visible');
+        toast.addEventListener('transitionend', function () {
+          if (toast.parentNode) toast.parentNode.removeChild(toast);
+        }, { once: true });
+      }, 3500);
+    }
+
+    function setLockState(unlocked) {
+      if (unlocked) {
+        document.body.classList.remove('is-locked');
+        sessionStorage.setItem(MCA_KEY, 'true');
+      } else {
+        document.body.classList.add('is-locked');
+        sessionStorage.removeItem(MCA_KEY);
+      }
+      if (lockBtn) {
+        lockBtn.title = unlocked ? 'Lock Master Control' : 'Master Control Access';
+        lockBtn.setAttribute('aria-label', unlocked ? 'Lock Master Control' : 'Master Control Access');
+        lockBtn.classList.toggle('sidebar__lock-btn--active', unlocked);
+        lockBtn.innerHTML = unlocked
+          ? '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg>'
+          : '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>';
+      }
+    }
+
+    var sessionUnlocked = sessionStorage.getItem(MCA_KEY) === 'true';
+
+    // Start locked unless already unlocked this session
+    if (!sessionUnlocked) {
+      document.body.classList.add('is-locked');
+    }
+
+    // Inject lock button before the logout button
+    var lockBtn = document.createElement('button');
+    lockBtn.className = 'sidebar__lock-btn';
+    var footer = settingsBtn && settingsBtn.parentNode;
+    if (footer) {
+      footer.insertBefore(lockBtn, settingsBtn);
+    }
+
+    setLockState(sessionUnlocked);
+
+    lockBtn.addEventListener('click', function () {
+      var currentlyLocked = document.body.classList.contains('is-locked');
+      if (currentlyLocked) {
+        setLockState(true);
+        showMcaToast(name);
+      } else {
+        setLockState(false);
+      }
+    });
   }
 
   // ── Show page ─────────────────────────────────────────────────────

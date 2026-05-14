@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Medivex Supplier Orders</title>
+    <title>Medivex Inbound</title>
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body style="visibility:hidden">
@@ -32,7 +32,6 @@
           <a class="sidebar__link" href="invoice-generator.html">
             <svg class="sidebar__link-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
             Invoices
-            <span class="sidebar__badge">4</span>
           </a>
           <a class="sidebar__link" href="customer-orders.html">
             <svg class="sidebar__link-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
@@ -44,7 +43,7 @@
           </a>
 
           <p class="sidebar__section-label">Purchasing</p>
-          <a class="sidebar__link sidebar__link--active" href="supplier-orders.html">
+          <a class="sidebar__link" href="supplier-orders.html">
             <svg class="sidebar__link-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
             Supplier orders
           </a>
@@ -58,7 +57,7 @@
           </a>
 
           <p class="sidebar__section-label" data-power-only>Inventory</p>
-          <a class="sidebar__link" href="inbound.html" data-power-only>
+          <a class="sidebar__link sidebar__link--active" href="inbound.html" data-power-only>
             <svg class="sidebar__link-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>
             Inbound
           </a>
@@ -92,147 +91,32 @@
 
       <!-- ── Main ─────────────────────────────────────────────────── -->
       <div class="erp-main">
-        <div class="so-shell">
-          <aside class="panel-card composer-panel">
-            <div class="brand-block">
-              <img class="brand-logo" src="assets/logo.png" alt="Medivex Biotech logo" />
-              <div class="brand-copy">
-                <p class="eyebrow">Supply Desk</p>
-                <h1>Supplier Orders</h1>
-                <p class="lede">
-                  Capture supplier orders, pull unit costs directly from the supplier workbook,
-                  optionally calculate VAT at 18%, and keep every added order visible in one place.
-                </p>
-              </div>
+        <div class="grn-shell">
+
+          <!-- Page header -->
+          <div class="pdash-header">
+            <div class="pdash-header__copy">
+              <p class="eyebrow">Purchasing</p>
+              <h1>Inbound</h1>
+              <p>GRNs awaiting confirmation. Review each delivery and confirm to update stock levels.</p>
             </div>
+          </div>
 
-            <section class="section-card">
-              <div class="section-heading">
-                <div>
-                  <p class="section-kicker">Order Details</p>
-                  <h2>Supplier and reference</h2>
-                </div>
-              </div>
-
-              <div class="field-grid field-grid--two">
-                <label class="field field--full">
-                  <span>Supplier</span>
-                  <select id="supplier-name"></select>
-                </label>
-
-                <label class="field">
-                  <span>Order Date</span>
-                  <input id="supplier-order-date" type="date" />
-                </label>
-
-                <label class="field">
-                  <span>Supplier Reference</span>
-                  <input
-                    id="supplier-order-reference"
-                    type="text"
-                    placeholder="PO / invoice / delivery note"
-                  />
-                </label>
-
-                <div class="field field--full">
-                  <span>VAT</span>
-                  <label class="toggle-card" for="supplier-vat-enabled">
-                    <input id="supplier-vat-enabled" type="checkbox" />
-                    <div class="toggle-card__copy">
-                      <strong>Include VAT at 18%</strong>
-                      <small>Turn this on only if the supplier invoice includes VAT.</small>
-                    </div>
-                  </label>
-                </div>
-              </div>
-
-              <p id="supplier-status" class="field-note">
-                Choose a supplier to load the available products and unit costs.
-              </p>
-            </section>
-
-            <section class="section-card">
-              <div class="section-heading section-heading--inline">
-                <div>
-                  <p class="section-kicker">Line Items</p>
-                  <h2>Products and quantities</h2>
-                </div>
-                <button id="add-supplier-line" type="button" class="button button--soft">
-                  Add Product
-                </button>
-              </div>
-
-              <div id="supplier-line-items" class="order-line-items"></div>
-            </section>
-
-            <section class="summary-band summary-band--four">
-              <article class="summary-card">
-                <span>Active Lines</span>
-                <strong id="supplier-summary-lines">0</strong>
-              </article>
-              <article class="summary-card">
-                <span>Total Qty.</span>
-                <strong id="supplier-summary-quantity">0</strong>
-              </article>
-              <article class="summary-card">
-                <span id="supplier-summary-vat-label">VAT 0% (LKR)</span>
-                <strong id="supplier-summary-vat">0.00</strong>
-              </article>
-              <article class="summary-card">
-                <span id="supplier-summary-net-label">Net Total</span>
-                <strong id="supplier-summary-net">0.00</strong>
-              </article>
-            </section>
-
-            <div class="action-row">
-              <button id="save-supplier-order" type="button" class="button button--primary">
-                Add Supplier Order
-              </button>
-              <button id="reset-supplier-order" type="button" class="button button--ghost">
-                Reset
-              </button>
-            </div>
-          </aside>
-
-          <!-- Order Register section -->
+          <!-- Pending GRNs -->
           <div class="grn-section">
             <div class="grn-section-hd">
               <div>
-                <p class="section-kicker">Order Register</p>
-                <h2>All Supplier Orders</h2>
+                <p class="section-kicker">Awaiting Confirmation</p>
+                <h2>Pending GRNs</h2>
               </div>
               <article class="summary-card grn-reg-metric">
-                <span>Total Orders</span>
-                <strong id="orders-count">0</strong>
+                <span>Pending GRNs</span>
+                <strong id="inbound-pending-count">—</strong>
               </article>
             </div>
 
-            <div class="grn-batch-bar">
-              <div class="grn-batch-bar__summary">
-                <strong id="selected-orders-count">0 orders selected</strong>
-              </div>
-              <div class="grn-batch-bar__actions">
-                <button id="select-all-orders" type="button" class="button button--soft">Select All</button>
-                <button id="clear-selected-orders" type="button" class="button button--ghost">Clear</button>
-                <button id="delete-selected-orders" type="button" class="button button--ghost">Delete Selected</button>
-              </div>
-            </div>
-
-            <div class="pdash-table-wrap so-orders-table-wrap">
-              <table class="pdash-table">
-                <thead>
-                  <tr>
-                    <th style="width:36px;"></th>
-                    <th>Reference</th>
-                    <th>Supplier</th>
-                    <th>Date</th>
-                    <th>Items</th>
-                    <th>Amount (LKR)</th>
-                    <th style="width:72px;"></th>
-                  </tr>
-                </thead>
-                <tbody id="supplier-orders-list"></tbody>
-              </table>
+            <div id="inbound-grn-list" class="orders-list">
+              <div class="orders-empty">Loading…</div>
             </div>
           </div>
 
@@ -244,12 +128,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="supabase-config.js"></script>
     <script src="auth.js"></script>
-    <script>
-      window.MVB_PRICE_STORE.initProducts().finally(function () {
-        var s = document.createElement('script');
-        s.src = 'supplier-orders.js';
-        document.body.appendChild(s);
-      });
-    </script>
+    <script src="grn-pdf.js"></script>
+    <script src="inbound.js"></script>
   </body>
 </html>

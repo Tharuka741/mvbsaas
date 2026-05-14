@@ -368,6 +368,15 @@ button {
   background: rgba(19, 32, 65, 0.08);
 }
 
+.button--danger {
+  color: #dc2626;
+  background: rgba(220, 38, 38, 0.1);
+}
+
+.button--danger:hover {
+  background: rgba(220, 38, 38, 0.18);
+}
+
 .line-items {
   display: grid;
   gap: 14px;
@@ -2052,6 +2061,82 @@ button {
   stroke-linejoin: round;
 }
 
+.sidebar__lock-btn {
+  background: none;
+  border: none;
+  color: var(--ink-soft);
+  cursor: pointer;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 140ms ease, color 140ms ease;
+  flex-shrink: 0;
+}
+
+.sidebar__lock-btn:hover {
+  background: rgba(19, 32, 65, 0.07);
+  color: var(--ink);
+}
+
+.sidebar__lock-btn--active {
+  color: var(--brand);
+}
+
+.sidebar__lock-btn--active:hover {
+  background: rgba(21, 71, 150, 0.08);
+  color: var(--brand-strong);
+}
+
+.sidebar__lock-btn svg {
+  width: 14px;
+  height: 14px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* ── Master Control Access toast ─────────────────────────────────── */
+.mca-toast {
+  position: fixed;
+  top: 28px;
+  left: 50%;
+  transform: translateX(-50%) translateY(-12px);
+  background: linear-gradient(135deg, var(--brand) 0%, var(--brand-strong) 100%);
+  color: #fff;
+  padding: 14px 28px;
+  border-radius: 14px;
+  box-shadow: 0 12px 40px rgba(21, 71, 150, 0.32);
+  opacity: 0;
+  transition: opacity 0.28s ease, transform 0.28s ease;
+  z-index: 9999;
+  text-align: center;
+  pointer-events: none;
+  min-width: 260px;
+}
+
+.mca-toast--visible {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+.mca-toast__title {
+  margin: 0;
+  font-size: 0.88rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.mca-toast__sub {
+  margin: 3px 0 0;
+  font-size: 0.78rem;
+  opacity: 0.82;
+}
+
 .erp-main {
   margin-left: var(--sidebar-w);
   flex: 1;
@@ -3023,3 +3108,44 @@ button {
   font-weight: 700;
   vertical-align: middle;
 }
+
+.so-vat-badge--rejected {
+  background: rgba(220, 38, 38, 0.1);
+  color: #dc2626;
+}
+
+/* ── Inbound card footer ─────────────────────────────────────────── */
+.inbound-card__footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 14px 20px 18px;
+  border-top: 1px solid var(--line, rgba(19,32,65,0.1));
+}
+
+/* ── Read-only / locked mode ─────────────────────────────────────── */
+/* Applies to: admin (always), power users when Master Control is locked */
+
+/* Delete buttons everywhere */
+body.is-admin .pdash-delete-btn,
+body.is-admin .order-card__compact-delete,
+body.is-locked .pdash-delete-btn,
+body.is-locked .order-card__compact-delete { display: none !important; }
+
+/* Customer order status dropdowns */
+body.is-admin .co-status-select,
+body.is-locked .co-status-select { pointer-events: none; opacity: 0.7; }
+
+/* Product table inline inputs */
+body.is-admin .pdash-cell-input,
+body.is-locked .pdash-cell-input {
+  pointer-events: none;
+  border-color: transparent;
+  background: transparent;
+}
+
+/* Inbound confirm / reject — locked power users cannot action GRNs */
+body.is-locked .inbound-card__footer { display: none !important; }
+
+/* Supplier orders batch delete */
+body.is-locked #delete-selected-orders { display: none !important; }
