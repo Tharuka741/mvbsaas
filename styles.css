@@ -2336,6 +2336,7 @@ button {
 
 .stock-bar-fill--crit { background: #dc2626; }
 .stock-bar-fill--low  { background: #d97706; }
+.stock-bar-fill--ok   { background: #16a34a; }
 
 .stock-row__units {
   font-size: 0.79rem;

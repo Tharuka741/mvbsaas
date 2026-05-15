@@ -105,23 +105,23 @@
         <div class="dash-stat-grid">
           <div class="dash-stat-card">
             <span class="dash-stat-card__label">Revenue (this month)</span>
-            <strong class="dash-stat-card__value">Rs 842K</strong>
-            <span class="dash-stat-card__trend dash-trend--up">↑ 12% vs last month</span>
+            <strong class="dash-stat-card__value" id="dash-revenue">—</strong>
+            <span class="dash-stat-card__trend dash-trend--muted">From invoiced orders</span>
           </div>
           <div class="dash-stat-card">
-            <span class="dash-stat-card__label">Pending invoices</span>
-            <strong class="dash-stat-card__value">18</strong>
-            <span class="dash-stat-card__trend dash-trend--warn">4 overdue</span>
+            <span class="dash-stat-card__label">Unpaid invoices</span>
+            <strong class="dash-stat-card__value" id="dash-unpaid">—</strong>
+            <span class="dash-stat-card__trend dash-trend--warn">Customer orders</span>
           </div>
           <div class="dash-stat-card">
-            <span class="dash-stat-card__label">Open orders</span>
-            <strong class="dash-stat-card__value">34</strong>
-            <span class="dash-stat-card__trend dash-trend--up">↑ 8 new today</span>
+            <span class="dash-stat-card__label">Total orders</span>
+            <strong class="dash-stat-card__value" id="dash-total-orders">—</strong>
+            <span class="dash-stat-card__trend dash-trend--muted">All customer orders</span>
           </div>
           <div class="dash-stat-card">
             <span class="dash-stat-card__label">GRNs awaiting</span>
-            <strong class="dash-stat-card__value">6</strong>
-            <span class="dash-stat-card__trend dash-trend--muted">2 partially received</span>
+            <strong class="dash-stat-card__value" id="dash-grns-pending">—</strong>
+            <span class="dash-stat-card__trend dash-trend--warn">Pending in inbound</span>
           </div>
         </div>
 
@@ -134,42 +134,19 @@
             <div class="dash-panel">
               <div class="dash-panel__hd">
                 <h2>Recent customer orders</h2>
-                <a href="invoice-generator.html">View all →</a>
+                <a href="customer-orders.html">View all →</a>
               </div>
               <table class="dash-table">
                 <thead>
                   <tr>
-                    <th>ID</th>
+                    <th>Invoice</th>
                     <th>Customer</th>
                     <th>Amount</th>
                     <th>Status</th>
                   </tr>
                 </thead>
-                <tbody>
-                  <tr>
-                    <td class="dash-cell-id">#INV-091</td>
-                    <td>Colombo Medical</td>
-                    <td class="dash-cell-amount">Rs 24,800</td>
-                    <td><span class="dash-badge dash-badge--paid">Paid</span></td>
-                  </tr>
-                  <tr>
-                    <td class="dash-cell-id">#INV-090</td>
-                    <td>Medfresh Ltd</td>
-                    <td class="dash-cell-amount">Rs 11,200</td>
-                    <td><span class="dash-badge dash-badge--pending">Pending</span></td>
-                  </tr>
-                  <tr>
-                    <td class="dash-cell-id">#INV-089</td>
-                    <td>HealthCare Hub</td>
-                    <td class="dash-cell-amount">Rs 8,500</td>
-                    <td><span class="dash-badge dash-badge--draft">Draft</span></td>
-                  </tr>
-                  <tr>
-                    <td class="dash-cell-id">#INV-088</td>
-                    <td>Green Cross Pharm</td>
-                    <td class="dash-cell-amount">Rs 32,000</td>
-                    <td><span class="dash-badge dash-badge--paid">Paid</span></td>
-                  </tr>
+                <tbody id="dash-co-tbody">
+                  <tr><td colspan="4" class="pdash-empty">Loading…</td></tr>
                 </tbody>
               </table>
             </div>
@@ -188,95 +165,39 @@
                     <th>Status</th>
                   </tr>
                 </thead>
-                <tbody>
-                  <tr>
-                    <td class="dash-cell-id">#PO-044</td>
-                    <td>PharmaCo</td>
-                    <td class="dash-cell-amount">Rs 180K</td>
-                    <td><span class="dash-badge dash-badge--received">Received</span></td>
-                  </tr>
-                  <tr>
-                    <td class="dash-cell-id">#PO-043</td>
-                    <td>MedImports</td>
-                    <td class="dash-cell-amount">Rs 95,400</td>
-                    <td><span class="dash-badge dash-badge--partial">Partial</span></td>
-                  </tr>
-                  <tr>
-                    <td class="dash-cell-id">#PO-042</td>
-                    <td>BioSupply</td>
-                    <td class="dash-cell-amount">Rs 210K</td>
-                    <td><span class="dash-badge dash-badge--ordered">Ordered</span></td>
-                  </tr>
-                  <tr>
-                    <td class="dash-cell-id">#PO-041</td>
-                    <td>PharmaLink</td>
-                    <td class="dash-cell-amount">Rs 67,200</td>
-                    <td><span class="dash-badge dash-badge--received">Received</span></td>
-                  </tr>
+                <tbody id="dash-so-tbody">
+                  <tr><td colspan="4" class="pdash-empty">Loading…</td></tr>
                 </tbody>
               </table>
             </div>
 
           </div>
 
-          <!-- Low stock + activity row -->
+          <!-- Low stock + pending GRNs row -->
           <div class="dash-row">
 
             <div class="dash-panel">
               <div class="dash-panel__hd">
-                <h2>Low stock alerts</h2>
-                <a href="product-dashboard.html">Manage →</a>
+                <h2>Stock levels (lowest)</h2>
+                <a href="stock-levels.html">Manage →</a>
               </div>
               <div class="stock-list-hd">
                 <span>Product</span>
                 <span>Stock</span>
                 <span>Units</span>
               </div>
-              <div class="stock-row">
-                <span class="stock-row__name">Amoxicillin 500mg</span>
-                <div class="stock-bar-track"><div class="stock-bar-fill stock-bar-fill--crit" style="width:18%"></div></div>
-                <span class="stock-row__units">12</span>
-              </div>
-              <div class="stock-row">
-                <span class="stock-row__name">Paracetamol 1000mg</span>
-                <div class="stock-bar-track"><div class="stock-bar-fill stock-bar-fill--low" style="width:46%"></div></div>
-                <span class="stock-row__units">40</span>
-              </div>
-              <div class="stock-row">
-                <span class="stock-row__name">Metformin 500mg</span>
-                <div class="stock-bar-track"><div class="stock-bar-fill stock-bar-fill--crit" style="width:14%"></div></div>
-                <span class="stock-row__units">18</span>
-              </div>
-              <div class="stock-row">
-                <span class="stock-row__name">Cetirizine 10mg</span>
-                <div class="stock-bar-track"><div class="stock-bar-fill stock-bar-fill--low" style="width:54%"></div></div>
-                <span class="stock-row__units">55</span>
+              <div id="dash-stock-list">
+                <p class="pdash-empty" style="padding:12px 0;">Loading…</p>
               </div>
             </div>
 
             <div class="dash-panel">
               <div class="dash-panel__hd">
-                <h2>Activity feed</h2>
+                <h2>Pending inbound GRNs</h2>
+                <a href="inbound.html">Review →</a>
               </div>
-              <div class="activity-item">
-                <div class="activity-dot activity-dot--green"></div>
-                <span class="activity-item__text">GRN #031 completed for PO-044</span>
-                <span class="activity-item__time">9m</span>
-              </div>
-              <div class="activity-item">
-                <div class="activity-dot activity-dot--blue"></div>
-                <span class="activity-item__text">Invoice #091 marked paid</span>
-                <span class="activity-item__time">42m</span>
-              </div>
-              <div class="activity-item">
-                <div class="activity-dot activity-dot--amber"></div>
-                <span class="activity-item__text">PO-043 created for MedImports</span>
-                <span class="activity-item__time">1h</span>
-              </div>
-              <div class="activity-item">
-                <div class="activity-dot activity-dot--red"></div>
-                <span class="activity-item__text">Stock alert: Amoxicillin below reorder level</span>
-                <span class="activity-item__time">3h</span>
+              <div id="dash-activity-list">
+                <p class="pdash-empty" style="padding:12px 0;">Loading…</p>
               </div>
             </div>
 
@@ -289,5 +210,6 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="supabase-config.js"></script>
     <script src="auth.js"></script>
+    <script src="dashboard.js"></script>
   </body>
 </html>
