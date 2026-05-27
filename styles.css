@@ -2543,6 +2543,38 @@ button {
   flex-shrink: 0;
 }
 
+.co-delete-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid rgba(220, 38, 38, 0.2);
+  border-radius: 8px;
+  background: rgba(220, 38, 38, 0.06);
+  color: #dc2626;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+  flex-shrink: 0;
+  margin-left: 4px;
+  opacity: 1 !important;
+}
+
+.co-delete-btn:hover {
+  background: rgba(220, 38, 38, 0.14);
+  border-color: rgba(220, 38, 38, 0.4);
+}
+
+.co-delete-btn svg {
+  width: 15px;
+  height: 15px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
 .co-download-btn:hover {
   background: rgba(21, 71, 150, 0.08);
   border-color: rgba(21, 71, 150, 0.3);

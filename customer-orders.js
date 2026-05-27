@@ -68,14 +68,14 @@
     updateMetrics(orders);
 
     if (!orders.length) {
-      tbody.innerHTML = '<tr><td colspan="7" class="co-empty">No orders found.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="8" class="co-empty">No orders found.</td></tr>';
       return;
     }
 
     tbody.innerHTML = orders.map(function (order) {
-      var badgeClass = statusBadgeClass(order.status);
       var customer = (order.billed_to || '').split('\n')[0] || '—';
       var orderRef = escapeHtml(order.order_number || order.invoice_number || '#' + order.id);
+      var canDelete = !order.outbound_confirmed;
       return (
         '<tr>' +
         '<td class="co-cell-id">' + orderRef + '</td>' +
@@ -94,6 +94,13 @@
             '<svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>' +
           '</button>' +
         '</td>' +
+        '<td style="text-align:center;">' +
+          (canDelete
+            ? '<button class="co-delete-btn pdash-delete-btn" data-order-id="' + order.id + '" title="Delete order" aria-label="Delete order">' +
+                '<svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>' +
+              '</button>'
+            : '') +
+        '</td>' +
         '</tr>'
       );
     }).join('');
@@ -106,8 +113,29 @@
     renderTable(filtered);
   }
 
+  async function deleteOrder(orderId) {
+    var order = allOrders.find(function (o) { return o.id === orderId; });
+    if (!order) return;
+    if (order.outbound_confirmed) {
+      window.alert('This order has been confirmed for dispatch and cannot be deleted.');
+      return;
+    }
+    if (!window.confirm('Delete this order? This cannot be undone.')) return;
+
+    try {
+      await db.from('customer_order_items').delete().eq('order_id', orderId);
+      var res = await db.from('customer_orders').delete().eq('id', orderId);
+      if (res.error) throw res.error;
+      allOrders = allOrders.filter(function (o) { return o.id !== orderId; });
+      applyFilter();
+    } catch (err) {
+      console.error('Failed to delete order:', err);
+      window.alert('Could not delete the order. Please try again.');
+    }
+  }
+
   async function loadOrders() {
-    tbody.innerHTML = '<tr><td colspan="7" class="co-empty">Loading orders…</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="8" class="co-empty">Loading orders…</td></tr>';
     try {
       var result = await db
         .from('customer_orders')
@@ -195,6 +223,12 @@
   });
 
   tbody.addEventListener('click', function (event) {
+    var deleteBtn = event.target.closest('.co-delete-btn');
+    if (deleteBtn) {
+      deleteOrder(Number(deleteBtn.dataset.orderId));
+      return;
+    }
+
     var btn = event.target.closest('.co-download-btn');
     if (!btn) return;
 
