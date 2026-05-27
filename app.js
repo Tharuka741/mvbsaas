@@ -457,6 +457,25 @@ async function downloadInvoicePdf() {
     return;
   }
 
+  // Stock check — must pass before PDF is generated or order is saved
+  const db = window.MVB_DB;
+  const shortfalls = [];
+  for (const item of invoiceData.lineItems) {
+    const needed = item.quantity + (item.foc || 0);
+    if (needed <= 0) continue;
+    const fetchRes = await db.from('products').select('id, name, stock_quantity').eq('name', item.product.name);
+    if (fetchRes.error || !fetchRes.data || !fetchRes.data.length) continue;
+    const available = fetchRes.data[0].stock_quantity || 0;
+    if (available < needed) {
+      shortfalls.push({ name: item.product.name, available, needed });
+    }
+  }
+  if (shortfalls.length) {
+    const lines = shortfalls.map((s) => '• ' + s.name + ': need ' + s.needed + ', have ' + s.available);
+    window.alert('Insufficient stock for the following items:\n\n' + lines.join('\n') + '\n\nPlease replenish stock before saving.');
+    return;
+  }
+
   setButtonBusy(refs.downloadPdf, true, "Download PDF", "Generating PDF...");
 
   try {
