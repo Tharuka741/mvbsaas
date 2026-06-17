@@ -8,7 +8,11 @@
     // Build MEDIVEX_PRODUCTS from all rows with a unit_price
     var invRows = dbRows.filter(function (r) { return r.unit_price != null; });
     window.MEDIVEX_PRODUCTS = invRows.map(function (r) {
-      return { name: r.name, unitPrice: Number(r.unit_price) };
+      return {
+        name: r.name,
+        unitPrice: Number(r.unit_price),
+        variantPrice: r.variant_price != null ? Number(r.variant_price) : null,
+      };
     });
 
     // Build MEDIVEX_SUPPLIER_DIRECTORY from all rows with a supplier + unit_cost
@@ -27,7 +31,7 @@
   }
 
   async function initProducts() {
-    var result = await db.from('products').select('id, supplier, name, unit_cost, unit_price');
+    var result = await db.from('products').select('id, supplier, name, unit_cost, unit_price, variant_price');
     if (result.error || !result.data) return;
     if (result.data.length > 0) applyToGlobals(result.data);
   }

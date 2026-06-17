@@ -124,6 +124,7 @@
                   <th class="pdash-th-sort" data-sort="name">Product <span class="pdash-sort-icon"></span></th>
                   <th class="pdash-th-sort" data-sort="unit_cost">Cost (Rs.) <span class="pdash-sort-icon"></span></th>
                   <th class="pdash-th-sort" data-sort="unit_price">Price (Rs.) <span class="pdash-sort-icon"></span></th>
+                  <th>Variant Price (Rs.)</th>
                   <th></th>
                 </tr>
               </thead>
@@ -228,6 +229,7 @@
               '<td><input class="pdash-cell-input" id="new-name" type="text" placeholder="Product name *" autocomplete="off"></td>' +
               '<td><input class="pdash-cell-input pdash-cell-input--num" id="new-cost" type="number" min="0" step="0.01" placeholder="—"></td>' +
               '<td><input class="pdash-cell-input pdash-cell-input--num" id="new-price" type="number" min="0" step="0.01" placeholder="—"></td>' +
+              '<td><input class="pdash-cell-input pdash-cell-input--num" id="new-variant-price" type="number" min="0" step="0.01" placeholder="—"></td>' +
               '<td><div class="pdash-row-actions">' +
               '<button class="pdash-add-confirm-btn" id="confirm-add">Add</button>' +
               '<button class="pdash-cancel-add-btn" id="cancel-add">&#x2715;</button>' +
@@ -242,6 +244,7 @@
             var name = get(p.id, 'name', p.name);
             var cost = get(p.id, 'unit_cost', p.unit_cost);
             var price = get(p.id, 'unit_price', p.unit_price);
+            var variantPrice = get(p.id, 'variant_price', p.variant_price);
 
             var supplierOpts = '<option value="">—</option>' +
               allSuppliers.map(function (s) {
@@ -259,12 +262,13 @@
               '<td><input class="pdash-cell-input" type="text" value="' + esc(name) + '" data-field="name" placeholder="Product name" autocomplete="off"></td>' +
               '<td><input class="pdash-cell-input pdash-cell-input--num" type="number" min="0" step="0.01" value="' + fmt(cost) + '" data-field="unit_cost" placeholder="—"></td>' +
               '<td><input class="pdash-cell-input pdash-cell-input--num" type="number" min="0" step="0.01" value="' + fmt(price) + '" data-field="unit_price" placeholder="—"></td>' +
+              '<td><input class="pdash-cell-input pdash-cell-input--num" type="number" min="0" step="0.01" value="' + fmt(variantPrice) + '" data-field="variant_price" placeholder="—"></td>' +
               '<td><button class="pdash-delete-btn" data-id="' + p.id + '" title="Delete">&#x2715;</button></td>' +
               '</tr>';
           }
 
           if (!addingNew && filtered.length === 0) {
-            html = '<tr><td colspan="5" class="pdash-empty">No products found.</td></tr>';
+            html = '<tr><td colspan="6" class="pdash-empty">No products found.</td></tr>';
           }
 
           tbody.innerHTML = html;
@@ -314,6 +318,7 @@
               name: p.name,
               unit_cost: p.unit_cost,
               unit_price: p.unit_price,
+              variant_price: p.variant_price,
             };
           }
 
@@ -353,11 +358,13 @@
           var costVal = document.getElementById('new-cost').value;
           var priceVal = document.getElementById('new-price').value;
 
+          var variantPriceVal = document.getElementById('new-variant-price').value;
           var result = await db.from('products').insert([{
             supplier: supplier,
             name: name,
             unit_cost: costVal ? parseFloat(costVal) : null,
             unit_price: priceVal ? parseFloat(priceVal) : null,
+            variant_price: variantPriceVal ? parseFloat(variantPriceVal) : null,
           }]).select();
 
           if (result.error) { alert('Failed to add product. Please try again.'); return; }
@@ -448,7 +455,7 @@
 
         // ── Init ──────────────────────────────────────────────────
 
-        tbody.innerHTML = '<tr><td colspan="5" class="pdash-empty">Loading…</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="6" class="pdash-empty">Loading…</td></tr>';
 
         loadSuppliers();
 
@@ -459,7 +466,7 @@
             .order('name')
             .then(function (result) {
               if (result.error || !result.data) {
-                tbody.innerHTML = '<tr><td colspan="5" class="pdash-empty">Failed to load. Please refresh.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="6" class="pdash-empty">Failed to load. Please refresh.</td></tr>';
                 return;
               }
               allProducts = result.data;

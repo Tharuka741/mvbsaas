@@ -38,6 +38,7 @@ function createLineItem(partial = {}) {
     productName: partial.productName || "",
     quantity: partial.quantity ?? "1",
     foc: partial.foc ?? "0",
+    selectedPrice: null, // null = use standard unitPrice
   };
 }
 
@@ -133,15 +134,16 @@ function parseFocQuantity(focValue) {
   return foc;
 }
 
-function getLineAmount(lineItem) {
+function getEffectivePrice(lineItem) {
   const product = getProduct(lineItem.productName);
+  if (!product) return 0;
+  return lineItem.selectedPrice != null ? lineItem.selectedPrice : product.unitPrice;
+}
+
+function getLineAmount(lineItem) {
   const quantity = parseQuantity(lineItem.quantity);
-
-  if (!product || quantity === null) {
-    return 0;
-  }
-
-  return product.unitPrice * quantity;
+  if (quantity === null) return 0;
+  return getEffectivePrice(lineItem) * quantity;
 }
 
 function getSelectedLineItems() {
@@ -154,12 +156,13 @@ function getSelectedLineItems() {
         return null;
       }
 
+      const effectivePrice = getEffectivePrice(lineItem);
       return {
         ...lineItem,
-        product,
+        product: { ...product, unitPrice: effectivePrice },
         quantity,
         foc: parseFocQuantity(lineItem.foc),
-        amount: product.unitPrice * quantity,
+        amount: effectivePrice * quantity,
       };
     })
     .filter(Boolean);
@@ -247,7 +250,13 @@ function renderLineItems() {
 
           <label class="field">
             <span>Unit Price</span>
-            <input type="text" value="${product ? formatAmount(product.unitPrice) : "--"}" readonly />
+            ${product && product.variantPrice != null
+              ? `<select data-field="price">
+                  <option value="${product.unitPrice}" ${lineItem.selectedPrice == null || lineItem.selectedPrice === product.unitPrice ? 'selected' : ''}>Standard — LKR ${formatAmount(product.unitPrice)}</option>
+                  <option value="${product.variantPrice}" ${lineItem.selectedPrice === product.variantPrice ? 'selected' : ''}>Variant — LKR ${formatAmount(product.variantPrice)}</option>
+                </select>`
+              : `<input type="text" value="${product ? formatAmount(product.unitPrice) : '--'}" readonly />`
+            }
           </label>
 
           <label class="field">
@@ -274,7 +283,7 @@ function renderLineItems() {
 
           <label class="field">
             <span>Amount</span>
-            <input type="text" value="${product ? formatAmount(amount) : "--"}" readonly />
+            <input type="text" value="${product ? formatAmount(amount) : "--"}" readonly data-display="amount" />
           </label>
 
           <button
@@ -295,18 +304,13 @@ function renderLineItems() {
 function updateLineItemDisplays() {
   state.lineItems.forEach((lineItem) => {
     const row = refs.lineItems.querySelector(`[data-line-item-id="${lineItem.id}"]`);
-
-    if (!row) {
-      return;
-    }
+    if (!row) return;
 
     const product = getProduct(lineItem.productName);
-    const displayInputs = row.querySelectorAll('input[readonly]');
-    const unitPriceInput = displayInputs[0];
-    const amountInput = displayInputs[1];
-
-    unitPriceInput.value = product ? formatAmount(product.unitPrice) : "--";
-    amountInput.value = product ? formatAmount(getLineAmount(lineItem)) : "--";
+    const amountInput = row.querySelector('[data-display="amount"]');
+    if (amountInput) {
+      amountInput.value = product ? formatAmount(getLineAmount(lineItem)) : "--";
+    }
   });
 }
 
@@ -556,7 +560,17 @@ refs.lineItems.addEventListener("change", (event) => {
 
   if (event.target.matches('[data-field="product"]')) {
     lineItem.productName = event.target.value;
+    lineItem.selectedPrice = null;
+    renderLineItems();
     syncUi();
+    return;
+  }
+
+  if (event.target.matches('[data-field="price"]')) {
+    lineItem.selectedPrice = parseFloat(event.target.value);
+    updateLineItemDisplays();
+    updateSummary();
+    renderPreview();
   }
 });
 
