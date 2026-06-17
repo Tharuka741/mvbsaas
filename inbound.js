@@ -65,7 +65,7 @@
         '</div>' +
         '</div>' +
         '<div class="order-card__table-wrap"><table class="order-card__table">' +
-        '<thead><tr><th>Product</th><th>Unit Cost</th><th>Qty.</th><th>Total</th><th>VAT</th><th>Net</th></tr></thead>' +
+        '<thead><tr><th>Product</th><th>Unit Cost</th><th>Qty.</th><th>FOC</th><th>Total</th><th>VAT</th><th>Net</th></tr></thead>' +
         '<tbody>' +
         items.map(function (item) {
           return (
@@ -73,6 +73,7 @@
             '<td>' + G.escapeHtml(item.product_name) + '</td>' +
             '<td>' + G.formatAmount(item.unit_cost) + '</td>' +
             '<td>' + G.formatQuantity(item.quantity) + '</td>' +
+            '<td>' + G.formatQuantity(item.foc || 0) + '</td>' +
             '<td>' + G.formatAmount(item.subtotal) + '</td>' +
             '<td>' + G.formatAmount(item.vat) + '</td>' +
             '<td>' + G.formatAmount(item.net) + '</td>' +
@@ -139,7 +140,7 @@
 
       var stockMap = {};
       items.forEach(function (item) {
-        stockMap[item.product_name] = (stockMap[item.product_name] || 0) + item.quantity;
+        stockMap[item.product_name] = (stockMap[item.product_name] || 0) + item.quantity + (item.foc || 0);
       });
 
       var productNames = Object.keys(stockMap);

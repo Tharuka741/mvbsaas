@@ -103,6 +103,7 @@ function createSupplierLineItem(partial = {}) {
     id: nextSupplierLineItemId++,
     productName: partial.productName || "",
     quantity: partial.quantity ?? "1",
+    foc: partial.foc ?? "0",
   };
 }
 
@@ -212,6 +213,7 @@ function getSupplierLineDetails(lineItem) {
     return null;
   }
 
+  const foc = Math.max(0, parseInt(lineItem.foc, 10) || 0);
   const subtotal = roundCurrency(product.unitCost * quantity);
   const vat = roundCurrency(subtotal * (isSupplierVatEnabled() ? VAT_RATE : 0));
   const net = roundCurrency(subtotal + vat);
@@ -220,6 +222,7 @@ function getSupplierLineDetails(lineItem) {
     productName: product.product,
     unitCost: product.unitCost,
     quantity,
+    foc,
     subtotal,
     vat,
     net,
@@ -236,7 +239,7 @@ function getSupplierOrderDraft() {
   const subtotal = roundCurrency(lineItems.reduce((sum, lineItem) => sum + lineItem.subtotal, 0));
   const vatTotal = roundCurrency(lineItems.reduce((sum, lineItem) => sum + lineItem.vat, 0));
   const netTotal = roundCurrency(lineItems.reduce((sum, lineItem) => sum + lineItem.net, 0));
-  const totalQuantity = lineItems.reduce((sum, lineItem) => sum + lineItem.quantity, 0);
+  const totalQuantity = lineItems.reduce((sum, lineItem) => sum + lineItem.quantity + lineItem.foc, 0);
   const vatEnabled = isSupplierVatEnabled();
 
   return {
@@ -361,6 +364,18 @@ function renderSupplierLineItems() {
           </label>
 
           <label class="field">
+            <span>FOC</span>
+            <input
+              data-field="foc"
+              type="text"
+              inputmode="numeric"
+              pattern="[0-9]*"
+              value="${escapeHtml(lineItem.foc)}"
+              placeholder="0"
+            />
+          </label>
+
+          <label class="field">
             <span>Total</span>
             <input
               type="text"
@@ -446,6 +461,7 @@ function renderSupplierOrdersList() {
               <td>${escapeHtml(item.productName)}</td>
               <td style="text-align:right;">${formatAmount(item.unitCost)}</td>
               <td style="text-align:right;">${formatQuantity(item.quantity)}</td>
+              <td style="text-align:right;">${formatQuantity(item.foc || 0)}</td>
               <td style="text-align:right;">${formatAmount(item.subtotal)}</td>
               <td style="text-align:right;">${formatAmount(item.vat)}</td>
               <td style="text-align:right;">${formatAmount(item.net)}</td>
@@ -484,7 +500,7 @@ function renderSupplierOrdersList() {
               <table class="order-card__table">
                 <thead>
                   <tr>
-                    <th>Product</th><th>Unit Cost</th><th>Qty.</th><th>Subtotal</th><th>VAT</th><th>Net</th>
+                    <th>Product</th><th>Unit Cost</th><th>Qty.</th><th>FOC</th><th>Subtotal</th><th>VAT</th><th>Net</th>
                   </tr>
                 </thead>
                 <tbody>${itemLineRows}</tbody>
@@ -538,6 +554,7 @@ async function loadOrders() {
         productName: item.product_name,
         unitCost: Number(item.unit_cost),
         quantity: item.quantity,
+        foc: item.foc || 0,
         subtotal: Number(item.subtotal),
         vat: Number(item.vat),
         net: Number(item.net),
@@ -616,6 +633,7 @@ async function saveSupplierOrder() {
         product_name: item.productName,
         unit_cost: item.unitCost,
         quantity: item.quantity,
+        foc: item.foc,
         subtotal: item.subtotal,
         vat: item.vat,
         net: item.net,
@@ -748,6 +766,14 @@ refs.supplierLineItems.addEventListener("input", (event) => {
 
     lineItem.quantity = normalizedQuantity.replace(/^0+(?=\d)/, "");
     event.target.value = lineItem.quantity;
+    syncSupplierUi();
+  }
+
+  if (event.target.matches('[data-field="foc"]')) {
+    const normalizedFoc = String(event.target.value).replace(/[^\d]/g, "") || "0";
+
+    lineItem.foc = normalizedFoc.replace(/^0+(?=\d)/, "") || "0";
+    event.target.value = lineItem.foc;
     syncSupplierUi();
   }
 });
