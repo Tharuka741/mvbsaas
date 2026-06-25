@@ -110,18 +110,20 @@
     var notes = [];
     orders.forEach(function (order) {
       var chunks = chunkArray(order.lineItems, GRN_ROWS_PER_NOTE);
-      chunks.forEach(function (lineItems) {
+      var grandTotal = roundCurrency(
+        order.lineItems.reduce(function (sum, item) { return sum + Number(item.subtotal || 0); }, 0)
+      );
+      chunks.forEach(function (lineItems, chunkIndex) {
+        var isFirst = chunkIndex === 0;
+        var isLast  = chunkIndex === chunks.length - 1;
         var stampSource = (order.orderDateValue || toInputDate(new Date())).replace(/-/g, '');
-        var noteSubtotal = roundCurrency(
-          lineItems.reduce(function (sum, item) { return sum + Number(item.subtotal || 0); }, 0)
-        );
         notes.push({
-          supplierName: order.supplierName,
-          dateLabel: order.orderDateValue ? order.orderDateLabel : formatDisplayDate(toInputDate(new Date())),
-          invoiceNo: order.reference || '',
-          grnNo: 'GRN-' + stampSource.slice(2) + '-' + String(notes.length + 1).padStart(3, '0'),
-          lineItems: lineItems,
-          noteSubtotal: noteSubtotal,
+          supplierName: isFirst ? order.supplierName : '',
+          dateLabel:    isFirst ? (order.orderDateValue ? order.orderDateLabel : formatDisplayDate(toInputDate(new Date()))) : '',
+          invoiceNo:    isFirst ? (order.reference || '') : '',
+          grnNo:        isFirst ? ('GRN-' + stampSource.slice(2) + '-' + String(notes.length + 1).padStart(3, '0')) : '',
+          lineItems:    lineItems,
+          noteSubtotal: isLast ? grandTotal : null,
         });
       });
     });
@@ -152,7 +154,9 @@
       drawTextInCell(page, formatAmount(item.subtotal),   441, rowTop, 516, rowBottom, rowTextSize, fonts.body, 'right',  6);
     });
 
-    drawTextInCell(page, formatAmount(note.noteSubtotal), 441, 360 + yOffset, 516, 373 + yOffset, 8.4, fonts.bodyBold, 'right', 6);
+    if (note.noteSubtotal !== null && note.noteSubtotal !== undefined) {
+      drawTextInCell(page, formatAmount(note.noteSubtotal), 441, 360 + yOffset, 516, 373 + yOffset, 8.4, fonts.bodyBold, 'right', 6);
+    }
   }
 
   function sanitizeGrnFilename(value) {
