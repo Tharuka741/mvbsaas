@@ -1,5 +1,5 @@
 (async function () {
-  var RESTRICTED_PAGES = ['product-dashboard.html', 'inbound.html'];
+  var RESTRICTED_PAGES = ['product-dashboard.html', 'inbound.html', 'outbound.html'];
   var ADMIN_LANDING    = 'invoice-generator.html';
 
   // ── Session check ─────────────────────────────────────────────────

@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Medivex Customer Orders</title>
+    <title>Medivex Outbound</title>
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body style="visibility:hidden">
@@ -33,7 +33,7 @@
             <svg class="sidebar__link-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
             Invoices
           </a>
-          <a class="sidebar__link sidebar__link--active" href="customer-orders.html">
+          <a class="sidebar__link" href="customer-orders.html">
             <svg class="sidebar__link-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
             Customer orders
           </a>
@@ -61,7 +61,7 @@
             <svg class="sidebar__link-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>
             Inbound
           </a>
-          <a class="sidebar__link" href="outbound.html" data-power-only>
+          <a class="sidebar__link sidebar__link--active" href="outbound.html" data-power-only>
             <svg class="sidebar__link-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M5 12h14"/><path d="M12 5l7 7-7 7"/></svg>
             Outbound
           </a>
@@ -95,59 +95,32 @@
 
       <!-- ── Main ─────────────────────────────────────────────────── -->
       <div class="erp-main">
-        <div class="co-page">
+        <div class="grn-shell">
 
-          <div class="co-toolbar">
-            <div class="co-toolbar__title">
-              <p class="section-kicker">Sales</p>
-              <h1>Customer Orders</h1>
-            </div>
-            <div class="co-controls">
-              <select id="co-status-filter" class="co-filter">
-                <option value="">All statuses</option>
-                <option value="Unpaid">Unpaid</option>
-                <option value="Paid">Paid</option>
-              </select>
+          <!-- Page header -->
+          <div class="pdash-header">
+            <div class="pdash-header__copy">
+              <p class="eyebrow">Inventory</p>
+              <h1>Outbound</h1>
+              <p>Customer orders awaiting dispatch confirmation. Review each order and confirm to update stock levels.</p>
             </div>
           </div>
 
-          <div class="co-metrics">
-            <article class="summary-card">
-              <span>Total Orders</span>
-              <strong id="co-metric-orders">0</strong>
-            </article>
-            <article class="summary-card">
-              <span>Total Units</span>
-              <strong id="co-metric-units">0</strong>
-            </article>
-            <article class="summary-card">
-              <span>Revenue (LKR)</span>
-              <strong id="co-metric-revenue">0.00</strong>
-            </article>
-          </div>
+          <!-- Pending orders -->
+          <div class="grn-section">
+            <div class="grn-section-hd">
+              <div>
+                <p class="section-kicker">Awaiting Confirmation</p>
+                <h2>Pending Orders</h2>
+              </div>
+              <article class="summary-card grn-reg-metric">
+                <span>Pending Orders</span>
+                <strong id="outbound-pending-count">—</strong>
+              </article>
+            </div>
 
-          <div class="co-panel">
-            <div class="co-table-wrap">
-              <table class="co-table">
-                <thead>
-                  <tr>
-                    <th>Order</th>
-                    <th>Date</th>
-                    <th>Customer</th>
-                    <th>Items</th>
-                    <th>Amount (LKR)</th>
-                    <th>Status</th>
-                    <th>Dispatch</th>
-                    <th>Invoice</th>
-                    <th></th>
-                  </tr>
-                </thead>
-                <tbody id="co-table-body">
-                  <tr>
-                    <td colspan="8" class="co-empty">Loading orders…</td>
-                  </tr>
-                </tbody>
-              </table>
+            <div id="outbound-order-list" class="orders-list">
+              <div class="orders-empty">Loading…</div>
             </div>
           </div>
 
@@ -159,6 +132,6 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="supabase-config.js"></script>
     <script src="auth.js"></script>
-    <script src="customer-orders.js"></script>
+    <script src="outbound.js"></script>
   </body>
 </html>

@@ -3191,5 +3191,27 @@ body.is-locked .pdash-cell-input {
 /* Inbound confirm / reject — locked power users cannot action GRNs */
 body.is-locked .inbound-card__footer { display: none !important; }
 
+/* ── Outbound stock error ─────────────────────────────────────────── */
+.outbound-stock-error {
+  margin: 0 20px 4px;
+  padding: 12px 16px;
+  background: #fff5f5;
+  border: 1px solid #fca5a5;
+  border-radius: 6px;
+  color: #991b1b;
+  font-size: 13px;
+}
+
+.outbound-stock-error__title {
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.outbound-stock-error__list {
+  margin: 0;
+  padding-left: 18px;
+  line-height: 1.7;
+}
+
 /* Supplier orders batch delete */
 body.is-locked #delete-selected-orders { display: none !important; }

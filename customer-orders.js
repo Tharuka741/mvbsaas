@@ -68,7 +68,7 @@
     updateMetrics(orders);
 
     if (!orders.length) {
-      tbody.innerHTML = '<tr><td colspan="8" class="co-empty">No orders found.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="9" class="co-empty">No orders found.</td></tr>';
       return;
     }
 
@@ -88,6 +88,11 @@
             '<option value="Unpaid"' + (order.status !== 'Paid' ? ' selected' : '') + '>Unpaid</option>' +
             '<option value="Paid"' + (order.status === 'Paid' ? ' selected' : '') + '>Paid</option>' +
           '</select>' +
+        '</td>' +
+        '<td>' +
+          (order.outbound_confirmed
+            ? '<span class="co-badge co-badge--paid">Dispatched</span>'
+            : '<span class="co-badge co-badge--unpaid">Pending Dispatch</span>') +
         '</td>' +
         '<td style="text-align:center;">' +
           '<button class="co-download-btn" data-order-id="' + order.id + '" title="Download invoice PDF" aria-label="Download invoice">' +
@@ -135,7 +140,7 @@
   }
 
   async function loadOrders() {
-    tbody.innerHTML = '<tr><td colspan="8" class="co-empty">Loading orders…</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="9" class="co-empty">Loading orders…</td></tr>';
     try {
       var result = await db
         .from('customer_orders')
@@ -148,7 +153,7 @@
       applyFilter();
     } catch (err) {
       console.error('Failed to load customer orders:', err);
-      tbody.innerHTML = '<tr><td colspan="7" class="co-empty">Could not load orders. Please refresh.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="9" class="co-empty">Could not load orders. Please refresh.</td></tr>';
     }
   }
 
