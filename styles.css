@@ -3191,6 +3191,16 @@ body.is-locked .pdash-cell-input {
 /* Inbound confirm / reject — locked power users cannot action GRNs */
 body.is-locked .inbound-card__footer { display: none !important; }
 
+/* ── Stock levels dirty-row indicator ───────────────────────────── */
+.sl-row--dirty {
+  background: rgba(185, 106, 16, 0.06);
+}
+
+.sl-row--dirty .sl-qty-input {
+  border-color: #b96a10;
+  color: #b96a10;
+}
+
 /* ── Outbound stock error ─────────────────────────────────────────── */
 .outbound-stock-error {
   margin: 0 20px 4px;

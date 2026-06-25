@@ -1,14 +1,16 @@
 (function () {
   var db = window.MVB_DB;
 
-  var allProducts    = [];
+  var allProducts  = [];
+  var pendingChanges = {}; // productId (number) -> new qty (number)
 
-  var tbody          = document.getElementById('sl-tbody');
-  var searchEl       = document.getElementById('sl-search');
-  var elTotal        = document.getElementById('sl-total-products');
-  var elTotalUnits   = document.getElementById('sl-total-units');
-  var elLowStock     = document.getElementById('sl-low-stock');
-  var elOutOfStock   = document.getElementById('sl-out-of-stock');
+  var tbody        = document.getElementById('sl-tbody');
+  var searchEl     = document.getElementById('sl-search');
+  var saveAllBtn   = document.getElementById('sl-save-all');
+  var elTotal      = document.getElementById('sl-total-products');
+  var elTotalUnits = document.getElementById('sl-total-units');
+  var elLowStock   = document.getElementById('sl-low-stock');
+  var elOutOfStock = document.getElementById('sl-out-of-stock');
 
   function esc(v) {
     return String(v || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
@@ -18,10 +20,16 @@
     return Number(v || 0).toLocaleString('en-LK', { maximumFractionDigits: 0 });
   }
 
-  function stockClass(qty) {
-    if (qty <= 0)  return 'sl-stock--empty';
-    if (qty < 10)  return 'sl-stock--low';
-    return '';
+  // ── Save bar ──────────────────────────────────────────────────────
+
+  function updateSaveBar() {
+    var count = Object.keys(pendingChanges).length;
+    if (count > 0) {
+      saveAllBtn.textContent = 'Save ' + count + ' change' + (count !== 1 ? 's' : '');
+      saveAllBtn.style.display = '';
+    } else {
+      saveAllBtn.style.display = 'none';
+    }
   }
 
   // ── Render ────────────────────────────────────────────────────────
@@ -35,9 +43,9 @@
         })
       : allProducts.slice();
 
-    var totalUnits  = filtered.reduce(function (s, p) { return s + (p.stock_quantity || 0); }, 0);
-    var lowCount    = filtered.filter(function (p) { return p.stock_quantity > 0 && p.stock_quantity < 10; }).length;
-    var emptyCount  = filtered.filter(function (p) { return (p.stock_quantity || 0) <= 0; }).length;
+    var totalUnits = filtered.reduce(function (s, p) { return s + (p.stock_quantity || 0); }, 0);
+    var lowCount   = filtered.filter(function (p) { return p.stock_quantity > 0 && p.stock_quantity < 10; }).length;
+    var emptyCount = filtered.filter(function (p) { return (p.stock_quantity || 0) <= 0; }).length;
 
     elTotal.textContent      = String(filtered.length);
     elTotalUnits.textContent = fmtQty(totalUnits);
@@ -45,43 +53,51 @@
     elOutOfStock.textContent = String(emptyCount);
 
     if (!filtered.length) {
-      tbody.innerHTML = '<tr><td colspan="4" class="pdash-empty">No products found.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="3" class="pdash-empty">No products found.</td></tr>';
       return;
     }
 
     tbody.innerHTML = filtered.map(function (p) {
-      var qty = p.stock_quantity || 0;
-      var sc  = stockClass(qty);
+      var savedQty  = p.stock_quantity || 0;
+      var hasPending = Object.prototype.hasOwnProperty.call(pendingChanges, p.id);
+      var displayQty = hasPending ? pendingChanges[p.id] : savedQty;
+      var isDirty    = hasPending && pendingChanges[p.id] !== savedQty;
+
       return (
-        '<tr data-product-id="' + p.id + '">' +
+        '<tr data-product-id="' + p.id + '" class="' + (isDirty ? 'sl-row--dirty' : '') + '">' +
         '<td>' + esc(p.name) + '</td>' +
         '<td>' + esc(p.supplier || '—') + '</td>' +
         '<td style="text-align:right;">' +
         '<input type="number" class="pdash-cell-input sl-qty-input" ' +
-               'value="' + qty + '" min="0" step="1" ' +
-               'data-original="' + qty + '" ' +
+               'value="' + displayQty + '" min="0" step="1" ' +
+               'data-original="' + savedQty + '" ' +
                'style="width:90px;text-align:right;" />' +
-        '</td>' +
-        '<td>' +
-        '<button class="button button--soft sl-save-btn" ' +
-                'data-product-id="' + p.id + '" ' +
-                'style="display:none;padding:5px 12px;font-size:0.78rem;">Save</button>' +
         '</td>' +
         '</tr>'
       );
     }).join('');
 
-    // Reveal Save button only when value differs from original
     tbody.querySelectorAll('.sl-qty-input').forEach(function (input) {
       input.addEventListener('input', function () {
-        var saveBtn = input.closest('tr').querySelector('.sl-save-btn');
-        saveBtn.style.display = input.value !== input.dataset.original ? '' : 'none';
+        var row       = input.closest('tr');
+        var productId = Number(row.dataset.productId);
+        var original  = Number(input.dataset.original);
+        var newVal    = parseInt(input.value, 10);
+
+        if (!isNaN(newVal) && newVal >= 0 && newVal !== original) {
+          pendingChanges[productId] = newVal;
+          row.classList.add('sl-row--dirty');
+        } else {
+          delete pendingChanges[productId];
+          row.classList.remove('sl-row--dirty');
+        }
+
+        updateSaveBar();
       });
-      // Allow saving with Enter key
+
       input.addEventListener('keydown', function (e) {
-        if (e.key === 'Enter') {
-          var saveBtn = input.closest('tr').querySelector('.sl-save-btn');
-          if (saveBtn && saveBtn.style.display !== 'none') saveBtn.click();
+        if (e.key === 'Enter' && Object.keys(pendingChanges).length > 0) {
+          saveAllBtn.click();
         }
       });
     });
@@ -102,54 +118,58 @@
       renderTable();
     } catch (err) {
       console.error('Failed to load stock levels:', err && (err.message || err));
-      tbody.innerHTML = '<tr><td colspan="4" class="pdash-empty">Could not load stock levels. Please refresh.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="3" class="pdash-empty">Could not load stock levels. Please refresh.</td></tr>';
     }
   }
 
-  // ── Save stock adjustment ─────────────────────────────────────────
+  // ── Save all pending changes ───────────────────────────────────────
 
-  tbody.addEventListener('click', async function (e) {
-    var btn = e.target.closest('.sl-save-btn');
-    if (!btn) return;
+  saveAllBtn.addEventListener('click', async function () {
+    var ids = Object.keys(pendingChanges).map(Number);
+    if (!ids.length) return;
 
-    var row       = btn.closest('tr');
-    var productId = Number(row.dataset.productId);
-    var input     = row.querySelector('.sl-qty-input');
-    var newQty    = parseInt(input.value, 10);
+    saveAllBtn.disabled    = true;
+    saveAllBtn.textContent = 'Saving…';
 
-    if (isNaN(newQty) || newQty < 0) {
-      window.alert('Please enter a valid stock quantity (0 or more).');
-      return;
-    }
+    var failed = [];
 
-    btn.disabled    = true;
-    btn.textContent = 'Saving…';
+    await Promise.all(ids.map(async function (productId) {
+      var newQty = pendingChanges[productId];
+      try {
+        var res = await db.from('products').update({ stock_quantity: newQty }).eq('id', productId);
+        if (res.error) throw res.error;
 
-    try {
-      var res = await db.from('products').update({ stock_quantity: newQty }).eq('id', productId);
-      if (res.error) throw res.error;
+        var prod = allProducts.find(function (p) { return p.id === productId; });
+        if (prod) prod.stock_quantity = newQty;
 
-      // Update local cache
-      var prod = allProducts.find(function (p) { return p.id === productId; });
-      if (prod) prod.stock_quantity = newQty;
+        delete pendingChanges[productId];
 
-      // Update input state without full re-render
-      input.dataset.original = String(newQty);
-      btn.style.display = 'none';
+        // Update the input's original marker and clear dirty state without full re-render
+        var row = tbody.querySelector('[data-product-id="' + productId + '"]');
+        if (row) {
+          var input = row.querySelector('.sl-qty-input');
+          if (input) input.dataset.original = String(newQty);
+          row.classList.remove('sl-row--dirty');
+        }
+      } catch (err) {
+        console.error('Failed to update product ' + productId + ':', err && (err.message || err));
+        failed.push(productId);
+      }
+    }));
 
-      // Update summary counts
-      var totalUnits = allProducts.reduce(function (s, p) { return s + (p.stock_quantity || 0); }, 0);
-      var lowCount   = allProducts.filter(function (p) { return p.stock_quantity > 0 && p.stock_quantity < 10; }).length;
-      var emptyCount = allProducts.filter(function (p) { return (p.stock_quantity || 0) <= 0; }).length;
-      elTotalUnits.textContent = fmtQty(totalUnits);
-      elLowStock.textContent   = String(lowCount);
-      elOutOfStock.textContent = String(emptyCount);
-    } catch (err) {
-      console.error('Failed to update stock:', err && (err.message || err));
-      window.alert('Could not update stock quantity. Please try again.');
-    } finally {
-      btn.disabled    = false;
-      btn.textContent = 'Save';
+    // Refresh summary counts
+    var totalUnits = allProducts.reduce(function (s, p) { return s + (p.stock_quantity || 0); }, 0);
+    var lowCount   = allProducts.filter(function (p) { return p.stock_quantity > 0 && p.stock_quantity < 10; }).length;
+    var emptyCount = allProducts.filter(function (p) { return (p.stock_quantity || 0) <= 0; }).length;
+    elTotalUnits.textContent = fmtQty(totalUnits);
+    elLowStock.textContent   = String(lowCount);
+    elOutOfStock.textContent = String(emptyCount);
+
+    saveAllBtn.disabled = false;
+    updateSaveBar();
+
+    if (failed.length) {
+      window.alert('Some updates failed. Please try saving again.');
     }
   });
 
