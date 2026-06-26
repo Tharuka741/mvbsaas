@@ -687,6 +687,14 @@ async function deleteSelectedOrders() {
     return;
   }
 
+  // Remove any pending GRNs that belonged to the deleted orders
+  const pendingGrnIds = state.orders
+    .filter((o) => selectedIds.includes(o.id) && o.grnId && o.grnStatus === "pending")
+    .map((o) => o.grnId);
+  if (pendingGrnIds.length) {
+    await db.from("grns").delete().in("id", pendingGrnIds);
+  }
+
   state.orders = state.orders.filter((order) => !state.selectedOrderIds.has(order.id));
   state.selectedOrderIds.clear();
   renderSupplierOrdersList();
@@ -853,6 +861,11 @@ refs.supplierOrdersList.addEventListener("click", async (event) => {
     console.error("Failed to delete order:", res.error);
     window.alert("Could not remove order. Please try again.");
     return;
+  }
+
+  // Remove the pending GRN from inbound if one exists for this order
+  if (orderToDelete && orderToDelete.grnId && orderToDelete.grnStatus === "pending") {
+    await db.from("grns").delete().eq("id", orderToDelete.grnId);
   }
 
   state.orders = state.orders.filter((order) => order.id !== orderId);
