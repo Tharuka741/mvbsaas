@@ -1994,6 +1994,12 @@ button {
   background: rgba(255, 255, 255, 0.25);
 }
 
+.sidebar__link .sidebar__badge--alert,
+.sidebar__link--active .sidebar__badge--alert {
+  background: #dc2626;
+  color: #ffffff;
+}
+
 .sidebar__footer {
   padding: 13px 16px;
   border-top: 1px solid var(--line);

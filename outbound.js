@@ -35,8 +35,20 @@
     return !!(window.MVB_USER && window.MVB_USER.role === 'admin');
   }
 
+  function updateSidebarBadge() {
+    var badge = document.getElementById('sidebar-badge-outbound');
+    if (!badge) return;
+    if (pendingOrders.length > 0) {
+      badge.textContent = pendingOrders.length > 99 ? '99+' : String(pendingOrders.length);
+      badge.style.display = '';
+    } else {
+      badge.style.display = 'none';
+    }
+  }
+
   function renderOrders() {
     elCount.textContent = String(pendingOrders.length);
+    updateSidebarBadge();
 
     if (!pendingOrders.length) {
       orderList.innerHTML =
