@@ -1,7 +1,11 @@
 (function () {
   var db = window.MVB_DB;
-  var allOrders     = [];
-  var currentFilter = '';
+  var allOrders          = [];
+  var currentFilter      = '';
+  var currentMonthFilter = (function () {
+    var now = new Date();
+    return now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+  }());
   var pdfDepsLoaded = false;
   var loadedItems   = {}; // orderId -> customer_order_items[]
 
@@ -29,9 +33,12 @@
 
   var tbody        = document.getElementById('co-table-body');
   var filterSelect = document.getElementById('co-status-filter');
+  var monthSelect  = document.getElementById('co-month-filter');
   var metricOrders  = document.getElementById('co-metric-orders');
   var metricUnits   = document.getElementById('co-metric-units');
   var metricRevenue = document.getElementById('co-metric-revenue');
+  var metricPaid    = document.getElementById('co-metric-paid');
+  var metricUnpaid  = document.getElementById('co-metric-unpaid');
 
   function formatAmount(amount) {
     return Number(amount || 0).toLocaleString('en-LK', {
@@ -53,11 +60,17 @@
   }
 
   function updateMetrics(orders) {
-    var totalUnits   = orders.reduce(function (s, o) { return s + (o.item_count || 0); }, 0);
-    var totalRevenue = orders.reduce(function (s, o) { return s + Number(o.total_amount || 0); }, 0);
+    var totalUnits    = orders.reduce(function (s, o) { return s + (o.item_count || 0); }, 0);
+    var totalRevenue  = orders.reduce(function (s, o) { return s + Number(o.total_amount || 0); }, 0);
+    var paidRevenue   = orders.filter(function (o) { return o.status === 'Paid'; })
+                              .reduce(function (s, o) { return s + Number(o.total_amount || 0); }, 0);
+    var unpaidRevenue = orders.filter(function (o) { return o.status !== 'Paid'; })
+                              .reduce(function (s, o) { return s + Number(o.total_amount || 0); }, 0);
     metricOrders.textContent  = String(orders.length);
     metricUnits.textContent   = String(totalUnits);
     metricRevenue.textContent = formatAmount(totalRevenue);
+    metricPaid.textContent    = formatAmount(paidRevenue);
+    metricUnpaid.textContent  = formatAmount(unpaidRevenue);
   }
 
   // ── Detail content ────────────────────────────────────────────────
@@ -168,10 +181,36 @@
     }).join('');
   }
 
+  function populateMonthFilter() {
+    var seen = {};
+    allOrders.forEach(function (o) {
+      var ym = (o.invoice_date || '').slice(0, 7);
+      if (ym) seen[ym] = true;
+    });
+    var months = Object.keys(seen).sort().reverse();
+
+    monthSelect.innerHTML = '<option value="">All months</option>';
+    months.forEach(function (ym) {
+      var parts = ym.split('-');
+      var d = new Date(Number(parts[0]), Number(parts[1]) - 1, 1);
+      var label = d.toLocaleString('en-US', { month: 'long', year: 'numeric' });
+      var opt = document.createElement('option');
+      opt.value = ym;
+      opt.textContent = label;
+      if (ym === currentMonthFilter) opt.selected = true;
+      monthSelect.appendChild(opt);
+    });
+
+    // If current month has no data, leave "All months" selected
+    if (!seen[currentMonthFilter]) currentMonthFilter = '';
+  }
+
   function applyFilter() {
-    var filtered = currentFilter
-      ? allOrders.filter(function (o) { return o.status === currentFilter; })
-      : allOrders;
+    var filtered = allOrders.filter(function (o) {
+      var monthMatch  = !currentMonthFilter || (o.invoice_date || '').slice(0, 7) === currentMonthFilter;
+      var statusMatch = !currentFilter || o.status === currentFilter;
+      return monthMatch && statusMatch;
+    });
     renderTable(filtered);
   }
 
@@ -241,6 +280,7 @@
       if (result.error) throw result.error;
 
       allOrders = result.data || [];
+      populateMonthFilter();
       applyFilter();
     } catch (err) {
       console.error('Failed to load customer orders:', err);
@@ -303,6 +343,11 @@
   }
 
   // ── Events ────────────────────────────────────────────────────────
+
+  monthSelect.addEventListener('change', function () {
+    currentMonthFilter = monthSelect.value;
+    applyFilter();
+  });
 
   filterSelect.addEventListener('change', function () {
     currentFilter = filterSelect.value;

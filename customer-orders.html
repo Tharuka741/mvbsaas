@@ -103,6 +103,9 @@
               <h1>Customer Orders</h1>
             </div>
             <div class="co-controls">
+              <select id="co-month-filter" class="co-filter">
+                <option value="">All months</option>
+              </select>
               <select id="co-status-filter" class="co-filter">
                 <option value="">All statuses</option>
                 <option value="Unpaid">Unpaid</option>
@@ -123,6 +126,14 @@
             <article class="summary-card">
               <span>Revenue (LKR)</span>
               <strong id="co-metric-revenue">0.00</strong>
+            </article>
+            <article class="summary-card">
+              <span>Paid (LKR)</span>
+              <strong id="co-metric-paid">0.00</strong>
+            </article>
+            <article class="summary-card">
+              <span>Unpaid (LKR)</span>
+              <strong id="co-metric-unpaid">0.00</strong>
             </article>
           </div>
 
