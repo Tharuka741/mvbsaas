@@ -31,6 +31,10 @@
 
   // ── Render ────────────────────────────────────────────────────────
 
+  function isAdminViewer() {
+    return !!(window.MVB_USER && window.MVB_USER.role === 'admin');
+  }
+
   function renderPendingGrns() {
     elCount.textContent = String(pendingGrns.length);
 
@@ -86,8 +90,10 @@
         '</div>' +
         '<div class="inbound-card__footer">' +
         '<button class="button button--soft" data-action="download" title="Download GRN PDF">Download PDF</button>' +
-        '<button class="button button--danger" data-action="reject" title="Reject and delete this GRN">Reject</button>' +
-        '<button class="button button--primary" data-action="confirm" title="Confirm GRN and update stock">Confirm GRN</button>' +
+        (isAdminViewer()
+          ? '<span class="co-badge co-badge--unpaid">Pending manager approval</span>'
+          : '<button class="button button--danger" data-action="reject" title="Reject and delete this GRN">Reject</button>' +
+            '<button class="button button--primary" data-action="confirm" title="Confirm GRN and update stock">Confirm GRN</button>') +
         '</div>' +
         '</article>'
       );

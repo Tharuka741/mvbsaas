@@ -31,6 +31,10 @@
 
   // ── Render ────────────────────────────────────────────────────────
 
+  function isAdminViewer() {
+    return !!(window.MVB_USER && window.MVB_USER.role === 'admin');
+  }
+
   function renderOrders() {
     elCount.textContent = String(pendingOrders.length);
 
@@ -81,8 +85,10 @@
         '</div>' +
         '<div class="outbound-stock-error" data-stock-error style="display:none;"></div>' +
         '<div class="inbound-card__footer">' +
-        '<button class="button button--danger" data-action="reject">Reject</button>' +
-        '<button class="button button--primary" data-action="confirm">Confirm Dispatch</button>' +
+        (isAdminViewer()
+          ? '<span class="co-badge co-badge--unpaid">Pending manager approval</span>'
+          : '<button class="button button--danger" data-action="reject">Reject</button>' +
+            '<button class="button button--primary" data-action="confirm">Confirm Dispatch</button>') +
         '</div>' +
         '</article>'
       );

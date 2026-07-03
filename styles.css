@@ -3169,20 +3169,20 @@ body.is-locked .sl-save-btn { display: none !important; }
 }
 
 /* ── Read-only / locked mode ─────────────────────────────────────── */
-/* Applies to: admin (always), power users when Master Control is locked */
+/* Applies to: power users only, when Master Control is locked.
+   Admin read-only restrictions (Products, Stock levels) are enforced
+   per-page in JS instead, since .pdash-delete-btn/.pdash-cell-input are
+   also reused on Sales & Purchasing pages (Customers, Suppliers, Customer
+   orders) where admin is allowed to edit/delete. */
 
 /* Delete buttons everywhere */
-body.is-admin .pdash-delete-btn,
-body.is-admin .order-card__compact-delete,
 body.is-locked .pdash-delete-btn,
 body.is-locked .order-card__compact-delete { display: none !important; }
 
 /* Customer order status dropdowns */
-body.is-admin .co-status-select,
 body.is-locked .co-status-select { pointer-events: none; opacity: 0.7; }
 
 /* Product table inline inputs */
-body.is-admin .pdash-cell-input,
 body.is-locked .pdash-cell-input {
   pointer-events: none;
   border-color: transparent;

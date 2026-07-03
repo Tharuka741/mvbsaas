@@ -17,6 +17,10 @@
   var elLowStock   = document.getElementById('sl-low-stock');
   var elOutOfStock = document.getElementById('sl-out-of-stock');
 
+  function isAdminViewer() {
+    return !!(window.MVB_USER && window.MVB_USER.role === 'admin');
+  }
+
   function esc(v) {
     return String(v || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   }
@@ -99,6 +103,13 @@
       return;
     }
 
+    var readOnly = isAdminViewer();
+    if (readOnly) {
+      saveAllBtn.style.display = 'none';
+      var slCopy = document.querySelector('.pdash-header__copy p:last-child');
+      if (slCopy) slCopy.textContent = 'View-only — stock quantities are managed by your manager.';
+    }
+
     tbody.innerHTML = filtered.map(function (p) {
       var savedQty  = p.stock_quantity || 0;
       var hasPending = Object.prototype.hasOwnProperty.call(pendingChanges, p.id);
@@ -113,11 +124,14 @@
         '<input type="number" class="pdash-cell-input sl-qty-input" ' +
                'value="' + displayQty + '" min="0" step="1" ' +
                'data-original="' + savedQty + '" ' +
+               (readOnly ? 'disabled ' : '') +
                'style="width:90px;text-align:right;" />' +
         '</td>' +
         '</tr>'
       );
     }).join('');
+
+    if (readOnly) return;
 
     tbody.querySelectorAll('.sl-qty-input').forEach(function (input) {
       input.addEventListener('input', function () {
