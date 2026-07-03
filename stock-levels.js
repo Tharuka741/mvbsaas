@@ -1,12 +1,17 @@
 (function () {
   var db = window.MVB_DB;
 
-  var allProducts  = [];
-  var pendingChanges = {}; // productId (number) -> new qty (number)
+  var allProducts        = [];
+  var pendingChanges     = {}; // productId (number) -> new qty (number)
+  var currentStockFilter = '';
+  var sortCol            = 'name';
+  var sortDir            = 'asc';
 
-  var tbody        = document.getElementById('sl-tbody');
-  var searchEl     = document.getElementById('sl-search');
-  var saveAllBtn   = document.getElementById('sl-save-all');
+  var tbody         = document.getElementById('sl-tbody');
+  var searchEl      = document.getElementById('sl-search');
+  var stockFilterEl = document.getElementById('sl-stock-filter');
+  var saveAllBtn    = document.getElementById('sl-save-all');
+  var thead         = document.getElementById('sl-thead');
   var elTotal      = document.getElementById('sl-total-products');
   var elTotalUnits = document.getElementById('sl-total-units');
   var elLowStock   = document.getElementById('sl-low-stock');
@@ -34,14 +39,51 @@
 
   // ── Render ────────────────────────────────────────────────────────
 
+  function sortProducts(arr) {
+    return arr.slice().sort(function (a, b) {
+      var av, bv;
+      if (sortCol === 'stock_quantity') {
+        av = a.stock_quantity || 0;
+        bv = b.stock_quantity || 0;
+        return sortDir === 'asc' ? av - bv : bv - av;
+      }
+      av = (a[sortCol] || '').toLowerCase();
+      bv = (b[sortCol] || '').toLowerCase();
+      if (av < bv) return sortDir === 'asc' ? -1 : 1;
+      if (av > bv) return sortDir === 'asc' ? 1 : -1;
+      return 0;
+    });
+  }
+
+  function updateSortHeaders() {
+    thead.querySelectorAll('.sl-th-sort').forEach(function (th) {
+      var icon = th.querySelector('.sl-sort-icon');
+      if (th.dataset.col === sortCol) {
+        icon.textContent = sortDir === 'asc' ? '↑' : '↓';
+        icon.classList.add('sl-sort-icon--active');
+      } else {
+        icon.textContent = '↕';
+        icon.classList.remove('sl-sort-icon--active');
+      }
+    });
+  }
+
+  function stockCategory(qty) {
+    if ((qty || 0) <= 0)            return 'out';
+    if (qty > 0 && qty < 10)        return 'low';
+    return 'in';
+  }
+
   function renderTable() {
     var q = (searchEl.value || '').trim().toLowerCase();
-    var filtered = q
-      ? allProducts.filter(function (p) {
-          return p.name.toLowerCase().indexOf(q) !== -1 ||
-                 (p.supplier || '').toLowerCase().indexOf(q) !== -1;
-        })
-      : allProducts.slice();
+    var filtered = sortProducts(allProducts.filter(function (p) {
+      var nameMatch  = !q || p.name.toLowerCase().indexOf(q) !== -1 ||
+                       (p.supplier || '').toLowerCase().indexOf(q) !== -1;
+      var stockMatch = !currentStockFilter || stockCategory(p.stock_quantity) === currentStockFilter;
+      return nameMatch && stockMatch;
+    }));
+
+    updateSortHeaders();
 
     var totalUnits = filtered.reduce(function (s, p) { return s + (p.stock_quantity || 0); }, 0);
     var lowCount   = filtered.filter(function (p) { return p.stock_quantity > 0 && p.stock_quantity < 10; }).length;
@@ -173,7 +215,25 @@
     }
   });
 
+  thead.addEventListener('click', function (e) {
+    var th = e.target.closest('[data-col]');
+    if (!th) return;
+    var col = th.dataset.col;
+    if (col === sortCol) {
+      sortDir = sortDir === 'asc' ? 'desc' : 'asc';
+    } else {
+      sortCol = col;
+      sortDir = col === 'stock_quantity' ? 'desc' : 'asc';
+    }
+    renderTable();
+  });
+
   searchEl.addEventListener('input', renderTable);
+
+  stockFilterEl.addEventListener('change', function () {
+    currentStockFilter = stockFilterEl.value;
+    renderTable();
+  });
 
   loadProducts();
 })();

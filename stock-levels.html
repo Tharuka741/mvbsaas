@@ -134,16 +134,22 @@
                 placeholder="Filter by product name or supplier…"
                 autocomplete="off"
               />
+              <select id="sl-stock-filter" class="co-filter">
+                <option value="">All stock levels</option>
+                <option value="in">In stock</option>
+                <option value="low">Low stock</option>
+                <option value="out">Out of stock</option>
+              </select>
               <button id="sl-save-all" class="button button--primary" style="display:none;">Save changes</button>
             </div>
 
             <div class="pdash-table-wrap">
               <table class="pdash-table">
-                <thead>
+                <thead id="sl-thead">
                   <tr>
-                    <th>Product</th>
-                    <th>Supplier</th>
-                    <th style="text-align:right;">Stock Qty</th>
+                    <th data-col="name" class="sl-th-sort">Product <span class="sl-sort-icon"></span></th>
+                    <th data-col="supplier" class="sl-th-sort">Supplier <span class="sl-sort-icon"></span></th>
+                    <th data-col="stock_quantity" class="sl-th-sort" style="text-align:right;">Stock Qty <span class="sl-sort-icon"></span></th>
                   </tr>
                 </thead>
                 <tbody id="sl-tbody"></tbody>
@@ -156,6 +162,12 @@
 
     </div>
 
+    <style>
+      .sl-th-sort { cursor: pointer; user-select: none; white-space: nowrap; }
+      .sl-th-sort:hover { color: var(--accent, #2563eb); }
+      .sl-sort-icon { font-size: 0.75em; opacity: 0.35; margin-left: 3px; }
+      .sl-sort-icon.sl-sort-icon--active { opacity: 1; color: var(--accent, #2563eb); }
+    </style>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="supabase-config.js"></script>
     <script src="auth.js"></script>
