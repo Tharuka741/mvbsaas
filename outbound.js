@@ -174,6 +174,23 @@
         confirmBtn.disabled    = false;
         confirmBtn.textContent = 'Confirm Dispatch';
         rejectBtn.disabled     = false;
+
+        var orderForFailure = pendingOrders.find(function (o) { return o.id === orderId; });
+        var shortfallSummary = shortfalls.map(function (s) {
+          return s.name + ' (need ' + s.needed + ', have ' + s.available + ')';
+        }).join(', ');
+
+        window.MVB_AUDIT_LOG.log({
+          module: 'Outbound',
+          action: 'Dispatch Confirmed',
+          recordType: 'Customer Order',
+          recordId: orderId,
+          description: (window.MVB_USER ? window.MVB_USER.name : 'Someone') + ' attempted to confirm dispatch for Customer Order ' +
+            (orderForFailure ? (orderForFailure.order_number || orderForFailure.invoice_number || ('#' + orderId)) : ('#' + orderId)) +
+            ' but failed — insufficient stock for ' + shortfallSummary + '.',
+          success: false,
+        });
+
         return;
       }
 
@@ -193,15 +210,28 @@
 
         if (!fetchRes2.error && fetchRes2.data) {
           for (var k = 0; k < fetchRes2.data.length; k++) {
-            var prod = fetchRes2.data[k];
+            var prod   = fetchRes2.data[k];
+            var oldQty = prod.stock_quantity || 0;
+            var newQty = oldQty - reduceBy;
             await db.from('products').update({
-              stock_quantity: (prod.stock_quantity || 0) - reduceBy,
+              stock_quantity: newQty,
             }).eq('id', prod.id);
+
+            window.MVB_AUDIT_LOG.log({
+              module: 'Outbound',
+              action: 'Stock Deducted',
+              recordType: 'Product',
+              recordId: prod.id,
+              description: (window.MVB_USER ? window.MVB_USER.name : 'Someone') + ' deducted stock for Product "' + item2.product_name + '" on dispatch, updating quantity from ' + oldQty + ' to ' + newQty + '.',
+              oldData: { stock_quantity: oldQty },
+              newData: { stock_quantity: newQty },
+            });
           }
         }
       }
 
       // ── Mark order as confirmed ───────────────────────────────────
+      var orderBeingConfirmed = pendingOrders.find(function (o) { return o.id === orderId; });
       var updRes = await db.from('customer_orders')
         .update({ outbound_confirmed: true })
         .eq('id', orderId);
@@ -210,6 +240,17 @@
       pendingOrders = pendingOrders.filter(function (o) { return o.id !== orderId; });
       delete orderItemsMap[orderId];
       renderOrders();
+
+      window.MVB_AUDIT_LOG.log({
+        module: 'Outbound',
+        action: 'Dispatch Confirmed',
+        recordType: 'Customer Order',
+        recordId: orderId,
+        description: (window.MVB_USER ? window.MVB_USER.name : 'Someone') + ' confirmed dispatch for Customer Order ' +
+          (orderBeingConfirmed ? (orderBeingConfirmed.order_number || orderBeingConfirmed.invoice_number || ('#' + orderId)) : ('#' + orderId)) + '.',
+        oldData: { outbound_confirmed: false },
+        newData: { outbound_confirmed: true },
+      });
     } catch (err) {
       console.error('Failed to confirm order:', err && (err.message || err.details || err));
       window.alert('Could not confirm the order. Please try again.');
@@ -230,6 +271,8 @@
     rejectBtn.textContent = 'Rejecting…';
     confirmBtn.disabled   = true;
 
+    var orderBeingRejected = pendingOrders.find(function (o) { return o.id === orderId; });
+
     try {
       await db.from('customer_order_items').delete().eq('order_id', orderId);
       var delRes = await db.from('customer_orders').delete().eq('id', orderId);
@@ -238,6 +281,16 @@
       pendingOrders = pendingOrders.filter(function (o) { return o.id !== orderId; });
       delete orderItemsMap[orderId];
       renderOrders();
+
+      window.MVB_AUDIT_LOG.log({
+        module: 'Outbound',
+        action: 'Dispatch Rejected',
+        recordType: 'Customer Order',
+        recordId: orderId,
+        description: (window.MVB_USER ? window.MVB_USER.name : 'Someone') + ' rejected dispatch for Customer Order ' +
+          (orderBeingRejected ? (orderBeingRejected.order_number || orderBeingRejected.invoice_number || ('#' + orderId)) : ('#' + orderId)) + '.',
+        oldData: orderBeingRejected,
+      });
     } catch (err) {
       console.error('Failed to reject order:', err && (err.message || err.details || err));
       window.alert('Could not reject the order. Please try again.');

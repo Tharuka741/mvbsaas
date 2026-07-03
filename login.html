@@ -159,8 +159,34 @@
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="supabase-config.js"></script>
+    <script src="audit-log.js"></script>
     <script>
       (async function () {
+        // login.html doesn't load auth.js, so it fetches role/name itself
+        // to populate window.MVB_USER just enough for audit-log.js to log.
+        async function logAuthEvent(session, action, describe) {
+          try {
+            var roleRes = await db
+              .from('user_roles')
+              .select('role, name')
+              .eq('id', session.user.id)
+              .single();
+            var roleData = roleRes.data;
+            var name = roleData ? roleData.name : session.user.email;
+            window.MVB_USER = {
+              id: session.user.id,
+              email: session.user.email,
+              name: name,
+              role: roleData ? roleData.role : null,
+            };
+            window.MVB_AUDIT_LOG.log({
+              module: 'Auth',
+              action: action,
+              description: describe(name),
+            });
+          } catch (e) { /* best-effort only */ }
+        }
+
         var db = window.MVB_DB;
 
         // ── Invite flow: URL contains #access_token&type=invite ───────
@@ -199,6 +225,13 @@
               return;
             }
 
+            var newSession = (await db.auth.getSession()).data.session;
+            if (newSession) {
+              await logAuthEvent(newSession, 'Invite Accepted', function (name) {
+                return name + ' accepted their invite and set a password.';
+              });
+            }
+
             window.location.replace('index.html');
           });
           return;
@@ -233,6 +266,12 @@
             btn.disabled = false;
             btn.textContent = 'Sign in';
             return;
+          }
+
+          if (result.data.session) {
+            await logAuthEvent(result.data.session, 'Login', function (name) {
+              return name + ' logged in.';
+            });
           }
 
           window.location.replace('index.html');

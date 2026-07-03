@@ -642,6 +642,15 @@ async function saveSupplierOrder() {
 
     if (itemsRes.error) throw itemsRes.error;
 
+    window.MVB_AUDIT_LOG.log({
+      module: "Supplier Orders",
+      action: "Create",
+      recordType: "Supplier Order",
+      recordId: orderId,
+      description: (window.MVB_USER ? window.MVB_USER.name : "Someone") + ` created Supplier Order for "${draft.supplierName}".`,
+      newData: { supplier_name: draft.supplierName, net_total: draft.netTotal, total_quantity: draft.totalQuantity },
+    });
+
     resetSupplierOrderForm();
     await loadOrders();
   } catch (err) {
@@ -676,8 +685,20 @@ async function deleteSelectedOrders() {
     window.alert(
       `${confirmed.length} order${confirmed.length === 1 ? "" : "s"} cannot be deleted because their GRN has already been confirmed. Remove confirmed orders from the selection and try again.`
     );
+
+    window.MVB_AUDIT_LOG.log({
+      module: "Supplier Orders",
+      action: "Delete",
+      recordType: "Supplier Order",
+      description: (window.MVB_USER ? window.MVB_USER.name : "Someone") +
+        ` attempted to delete ${confirmed.length} supplier order(s) but failed — GRN already confirmed for: ${confirmed.map((o) => o.supplierName).join(", ")}.`,
+      success: false,
+    });
+
     return;
   }
+
+  const toDelete = state.orders.filter((o) => selectedIds.includes(o.id));
 
   const res = await db.from("supplier_orders").delete().in("id", selectedIds);
 
@@ -698,6 +719,31 @@ async function deleteSelectedOrders() {
   state.orders = state.orders.filter((order) => !state.selectedOrderIds.has(order.id));
   state.selectedOrderIds.clear();
   renderSupplierOrdersList();
+
+  toDelete.forEach((order) => {
+    window.MVB_AUDIT_LOG.log({
+      module: "Supplier Orders",
+      action: "Delete",
+      recordType: "Supplier Order",
+      recordId: order.id,
+      description: (window.MVB_USER ? window.MVB_USER.name : "Someone") + ` deleted Supplier Order for "${order.supplierName}".`,
+      oldData: flattenSupplierOrderForLog(order),
+    });
+  });
+}
+
+// Flat, human-relevant snapshot of a supplier order for audit logging —
+// deliberately excludes the nested lineItems array and internal bookkeeping
+// fields (catalogSupplier, grnStatus, createdAt, ...) that aren't meaningful
+// to a non-technical reader of the activity log.
+function flattenSupplierOrderForLog(order) {
+  return {
+    supplier_name: order.supplierName,
+    reference: order.reference || null,
+    order_date: order.orderDateValue,
+    net_total: order.netTotal,
+    total_quantity: order.totalQuantity,
+  };
 }
 
 refs.addSupplierLine.addEventListener("click", () => {
@@ -852,6 +898,17 @@ refs.supplierOrdersList.addEventListener("click", async (event) => {
   const orderToDelete = state.orders.find((o) => o.id === orderId);
   if (orderToDelete && orderToDelete.grnStatus === "confirmed") {
     window.alert("This order cannot be deleted because its GRN has already been confirmed. Confirmed GRNs are part of the stock record.");
+
+    window.MVB_AUDIT_LOG.log({
+      module: "Supplier Orders",
+      action: "Delete",
+      recordType: "Supplier Order",
+      recordId: orderId,
+      description: (window.MVB_USER ? window.MVB_USER.name : "Someone") +
+        ` attempted to delete Supplier Order for "${orderToDelete.supplierName}" but failed — its GRN has already been confirmed.`,
+      success: false,
+    });
+
     return;
   }
 
@@ -870,6 +927,15 @@ refs.supplierOrdersList.addEventListener("click", async (event) => {
 
   state.orders = state.orders.filter((order) => order.id !== orderId);
   renderSupplierOrdersList();
+
+  window.MVB_AUDIT_LOG.log({
+    module: "Supplier Orders",
+    action: "Delete",
+    recordType: "Supplier Order",
+    recordId: orderId,
+    description: (window.MVB_USER ? window.MVB_USER.name : "Someone") + ` deleted Supplier Order for "${orderToDelete ? orderToDelete.supplierName : orderId}".`,
+    oldData: orderToDelete ? flattenSupplierOrderForLog(orderToDelete) : null,
+  });
 });
 
 loadSuppliersForForm();

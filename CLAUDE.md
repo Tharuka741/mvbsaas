@@ -16,9 +16,9 @@ To work on this locally, serve the directory with any static file server (e.g. `
 
 Every protected page loads, in order:
 ```
-@supabase/supabase-js (CDN) → supabase-config.js → auth.js → <page-specific.js>
+@supabase/supabase-js (CDN) → supabase-config.js → auth.js → audit-log.js → <page-specific.js>
 ```
-`supabase-config.js` creates the Supabase client and exposes it as `window.MVB_DB`, plus builds `window.MEDIVEX_PRODUCTS` and `window.MEDIVEX_SUPPLIER_DIRECTORY` from the `products` table (used by the invoice/supplier-order forms). `auth.js` is the gatekeeper (see below) and runs on every page except `login.html`.
+`supabase-config.js` creates the Supabase client and exposes it as `window.MVB_DB`, plus builds `window.MEDIVEX_PRODUCTS` and `window.MEDIVEX_SUPPLIER_DIRECTORY` from the `products` table (used by the invoice/supplier-order forms). `auth.js` is the gatekeeper (see below) and runs on every page except `login.html`. `audit-log.js` exposes `window.MVB_AUDIT_LOG.log(...)` — a fire-and-forget helper every mutation-performing module calls after a successful create/update/delete to write a row to `audit_logs` (see User Activity Log below). `login.html` doesn't load `auth.js` (it's the one page you can reach unauthenticated) but still loads `audit-log.js` to log Login/Invite-Accepted events itself.
 
 Heavy assets (pdf-lib, the base64-encoded PDF templates in `logo-data.js` and `grn-template-data.js`, JSZip) are **not** loaded up front — they're injected via a `loadScript()` helper only when a page actually needs to generate a PDF/zip, to keep initial page loads light.
 
@@ -52,6 +52,7 @@ There is no single schema file — the schema is the union of the original (undo
 6. `migration-variant-price.sql` — adds `products.variant_price` (optional alternate/legacy MRP price).
 7. `migration-grn-remark.sql` — adds `supplier_orders.grn_remark` (used to mark GRN-rejected orders).
 8. `migration-outbound-backfill.sql` — one-time backfill marking pre-existing `customer_orders` as `outbound_confirmed = true` (they predate the outbound workflow).
+9. `migration-audit-log.sql` — creates `audit_logs` (append-only, no update/delete policy for anyone) and adds a `power read all` select policy on `user_roles` (previously power users could only read their own row) so the log viewer's user filter can list names.
 
 These are plain scripts pasted into the Supabase SQL editor by hand — there's no migration runner or tracking table, so don't assume re-running one is idempotent beyond what each script's own `if not exists`/`if exists` guards provide.
 
@@ -66,6 +67,7 @@ Core tables, reconstructed from migrations + the queries in the JS files (not ex
 - **customer_order_items** — `id, order_id, product_name, unit_price, quantity, foc, amount`.
 - **invoices / invoice_line_items** — written by `MVB_PRICE_STORE.saveInvoice` in `supabase-config.js`, but nothing currently calls that function; `customer_orders`/`customer_order_items` is what `invoice-generator.js` actually persists to. Treat `invoices`/`invoice_line_items` as legacy/unused unless you find a new caller.
 - **user_roles** — see Auth section above.
+- **audit_logs** — `id, created_at, user_id, user_name, user_role, module, action, record_type, record_id, description, old_data, new_data, success`. Append-only (no update/delete RLS policy exists for anyone, including power users); `module`/`action`/`record_type` are free text, not enums, so new modules can log through the same table without a migration.
 
 Products are looked up **by name**, not by a stable foreign key, in the stock-mutation code paths (GRN confirm in `inbound.js`, dispatch confirm in `outbound.js`). If duplicate product names ever exist, both/all matching rows get the stock delta applied.
 
@@ -82,13 +84,246 @@ Products are looked up **by name**, not by a stable foreign key, in the stock-mu
 
 PDF generation for invoices and GRNs are two independent pdf-lib pipelines (`invoice-pdf.js` and `grn-pdf.js` respectively) — they don't share code beyond both depending on the locally-vendored `assets/vendor/pdf-lib.min.js`. GRN PDFs are overlaid onto a real PDF template (decoded from a base64 data URL in `grn-template-data.js`) using absolute-coordinate cell drawing helpers (`drawTextInCell`, `coverCell`); invoice PDFs are drawn from scratch.
 
+**Reports / User Activity Log (audit trail):**
+`logs.html`/`logs.js` (sidebar: Reports → Activity Log) is a power-user-only viewer over `audit_logs`, restricted the same way as `product-dashboard.html`/`inbound.html`/`outbound.html` (added to `auth.js`'s `RESTRICTED_PAGES`, admins get redirected away; the real boundary is the `power read` RLS policy). Unlike every other page, it does **not** load the whole table into memory — filters/sort/pagination are all applied server-side via the Supabase query builder (`.gte`/`.lte`/`.eq`/`.or`/`.order`/`.range`) since the log is retained indefinitely and can grow unbounded. "Export to Excel" lazy-loads SheetJS from CDN (same `loadScript()` pattern as `jszip` in `grn.js`) and re-runs the current filter without the page `range()` (capped at 5000 rows).
+
+Every mutation-performing module (`customers.js`, `suppliers.js`, `product-dashboard.html`, `stock-levels.js`, `supplier-orders.js`, `grn.js`, `inbound.js`, `outbound.js`, `customer-orders.js`, `app.js`, `auth.js`, `login.html`) calls `window.MVB_AUDIT_LOG.log({module, action, recordType, recordId, description, oldData, newData})` immediately after a mutation succeeds — **without** awaiting it, so a slow or failing audit insert never blocks or delays the primary operation. Two things are deliberately **not** logged: failed login attempts (no session exists yet, and RLS requires `user_id = auth.uid()`, so the client can never write that row — there's no backend to do it another way) and in-app user-management events (there is no in-app user-management UI; roles are assigned directly in the Supabase dashboard).
+
 
 Key things future agents will need that aren't obvious from skimming individual files:
 
 
 No build system — package.json deps are unused; everything loads via CDN <script> tags. Just serve statically.
 Two-layer auth — Postgres RLS (is_power_user()/is_admin_user()) is the real boundary; the frontend "Master Control Access" lock is a session-scoped UX guard only, not a permission check.
-Schema only exists as 8 sequential migration scripts — no single schema file, and they must be applied in order.
+Schema only exists as 9 sequential migration scripts — no single schema file, and they must be applied in order.
 The two core workflows (sales→outbound stock deduction, purchasing→GRN→inbound stock increment) span 3-4 files each and aren't obvious without tracing the grn_id/grn_remark/outbound_confirmed state machine across tables.
 Stock mutations match products by name, not ID — a sharp edge if duplicate names ever exist.
 Heavy duplication (customers.js/suppliers.js near-identical; formatting helpers copy-pasted across 6+ files) flagged so a future refactor doesn't miss instances.
+
+
+Features to be implemented in the future:
+Returns Feature for both supplier orders and customer orders.
+Reports - Monthly Sales Report, Product wise sales, Purchase Reports, Payment Reports, Stock Level Reports.
+
+User Activity Log (Audit Trail) — IMPLEMENTED. See "Reports / User Activity Log (audit trail)" under Core business workflows above, `migration-audit-log.sql`, and the `audit_logs` entry under Data model. The spec below is kept as the reference design doc; scope decisions where the implementation diverges from it (failed-login logging, in-app user-management events, hardcoded UI filter lists vs. free-text schema) are called out there.
+
+Feature: User Activity Log (Audit Trail)
+
+Objective
+
+Implement a centralized audit logging system that records all significant user actions performed within the ERP system. The log shall provide a complete historical record of system activities for accountability, security, troubleshooting, and compliance purposes.
+
+Functional Requirements
+
+1. Automatic Logging
+
+The system shall automatically record user activities without requiring any user interaction.
+
+Every log entry shall be created immediately after a successful operation.
+
+Failed operations may optionally be logged separately for security monitoring.
+
+2. Logged information
+
+Log ID
+Unique identifier
+
+Timestamp
+Date & time of action
+
+User ID
+Internal user ID
+
+User Name
+Display name
+
+User Role
+Admin / Manager / CEO / Tech Lead
+
+Module
+Products, Customers, Supplier Orders, etc.
+
+Action
+Create, Update, Delete, Login, Logout, Approve, Reject, Export, etc.
+
+Record Type
+Product, Supplier Order, Customer, User, Invoice
+
+Record ID
+Database record ID
+
+Description
+Human-readable summary
+
+Previous Value
+JSON snapshot before change (if applicable)
+
+New Value
+JSON snapshot after change (if applicable)
+
+3. Actions That Must Be Logged
+
+Authentication
+
+* User Login
+* User Logout
+* Password Reset
+* Invite Accepted
+* Failed Login Attempt (optional)
+
+User Management
+
+* User Created
+* User Updated
+* User Deleted
+* Role Changed
+* Permissions Modified
+
+Products
+
+* Product Created
+* Product Updated
+* Product Deleted
+* Stock Quantity Updated
+* Unit Price Changed
+* Unit Cost Changed
+
+Suppliers
+
+* Supplier Added
+* Supplier Updated
+* Supplier Deleted
+
+Customers
+
+* Customer Added
+* Customer Updated
+* Customer Deleted
+
+Supplier Orders
+
+* Supplier Order Created
+* Supplier Order Updated
+* Supplier Order Deleted
+
+GRN
+
+* GRN Generated
+* GRN Saved
+* GRN Confirmed
+* GRN Rejected
+
+Inbound
+
+* Stock Received
+* Stock Adjusted
+
+Customer Orders
+
+* Customer Order Created
+* Customer Order Updated
+* Customer Order Deleted
+* Payment Status Changed
+
+Outbound
+
+* Dispatch Confirmed
+* Dispatch Rejected
+* Stock Deducted
+
+Inventory
+
+* Manual Stock Adjustment
+* Bulk Stock Update
+
+System
+
+* Settings Changed
+* Configuration Updated
+* Export Generated
+* PDF Generated (optional)
+
+Log Description Examples
+
+Instead of only storing technical data, every log should contain a readable description.
+
+John Smith created Product "Paracetamol 500mg".
+
+Mary confirmed GRN #1025.
+
+David updated stock quantity of Product "Insulin" from 120 to 165.
+
+Admin changed Unit Price of Product "Syringe" from RM2.50 to RM2.80.
+
+Sarah deleted Supplier "ABC Pharma".
+
+Kevin confirmed dispatch for Customer Order CO-000512.
+
+
+Change Tracking
+
+For UPDATE operations the system shall store:
+
+{
+  "unit_price": 12.50,
+  "stock": 100
+}
+
+{
+  "unit_price": 13.00,
+  "stock": 100
+}
+
+Search & Filtering
+
+Users with appropriate permissions shall be able to filter logs by:
+
+* Date range
+* User
+* Role
+* Module
+* Action
+* Record type
+* Record ID
+* Keywords
+* Success / Failed
+* Category
+
+Sorting
+
+Support sorting by:
+
+* Newest first
+* Oldest first
+* User
+* Module
+* Action
+
+Export
+
+Authorized users shall be able to export filtered logs to:
+
+* Excel
+
+Permissions - Only power users will only be able to access and view logs.
+Even power users cannot delete any logs, onced loged in the audit, it will be stored indefinitly.
+
+
+Logging shall add minimal latency (target <50 ms per operation).
+Logging failures should not block the primary business operation; they should be captured and monitored separately.
+
+A good audit log should be extensible, so future modules like Returns, Purchase Returns, or Stock Adjustments can reuse the same logging framework without requiring structural changes.
+
+Avoid hardcoding actions for the current modules, define generic fields such as:
+
+* Module
+* Action
+* Record Type
+* Record ID
+* Description
+* Old Data
+* New Data
+* Timestamp
+* User
+
+Prioritize implementing the logging system as a cross-cutting service used by every module. Think of it as infrastructure rather than a feature tied to Products or Orders so that it will accomodate future features implemented.

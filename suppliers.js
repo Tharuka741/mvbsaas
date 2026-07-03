@@ -157,6 +157,15 @@
       addingNew = false;
       btnAdd.disabled = false;
       render();
+
+      window.MVB_AUDIT_LOG.log({
+        module: 'Suppliers',
+        action: 'Create',
+        recordType: 'Supplier',
+        recordId: result.data[0].id,
+        description: (window.MVB_USER ? window.MVB_USER.name : 'Someone') + ' created Supplier "' + name + '".',
+        newData: result.data[0],
+      });
     } catch (err) {
       console.error('Failed to add supplier:', err);
       if (confirmBtn) { confirmBtn.disabled = false; confirmBtn.textContent = 'Add'; }
@@ -169,11 +178,21 @@
 
   async function deleteSupplier(id) {
     if (!window.confirm('Remove this supplier from the directory?')) return;
+    var existing = allSuppliers.find(function (s) { return s.id === id; });
     try {
       var result = await db.from('suppliers').delete().eq('id', id);
       if (result.error) throw result.error;
       allSuppliers = allSuppliers.filter(function (s) { return s.id !== id; });
       render();
+
+      window.MVB_AUDIT_LOG.log({
+        module: 'Suppliers',
+        action: 'Delete',
+        recordType: 'Supplier',
+        recordId: id,
+        description: (window.MVB_USER ? window.MVB_USER.name : 'Someone') + ' deleted Supplier "' + (existing ? existing.name : id) + '".',
+        oldData: existing,
+      });
     } catch (err) {
       console.error('Failed to delete supplier:', err);
       window.alert('Could not remove supplier. Please try again.');

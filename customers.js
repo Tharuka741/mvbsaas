@@ -157,6 +157,15 @@
       addingNew = false;
       btnAdd.disabled = false;
       render();
+
+      window.MVB_AUDIT_LOG.log({
+        module: 'Customers',
+        action: 'Create',
+        recordType: 'Customer',
+        recordId: result.data[0].id,
+        description: (window.MVB_USER ? window.MVB_USER.name : 'Someone') + ' created Customer "' + client + '".',
+        newData: result.data[0],
+      });
     } catch (err) {
       console.error('Failed to add customer:', err);
       if (confirmBtn) { confirmBtn.disabled = false; confirmBtn.textContent = 'Add'; }
@@ -169,11 +178,21 @@
 
   async function deleteCustomer(id) {
     if (!window.confirm('Remove this customer from the directory?')) return;
+    var existing = allCustomers.find(function (c) { return c.id === id; });
     try {
       var result = await db.from('customers').delete().eq('id', id);
       if (result.error) throw result.error;
       allCustomers = allCustomers.filter(function (c) { return c.id !== id; });
       render();
+
+      window.MVB_AUDIT_LOG.log({
+        module: 'Customers',
+        action: 'Delete',
+        recordType: 'Customer',
+        recordId: id,
+        description: (window.MVB_USER ? window.MVB_USER.name : 'Someone') + ' deleted Customer "' + (existing ? existing.client : id) + '".',
+        oldData: existing,
+      });
     } catch (err) {
       console.error('Failed to delete customer:', err);
       window.alert('Could not remove customer. Please try again.');

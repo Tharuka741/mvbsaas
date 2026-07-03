@@ -182,9 +182,21 @@
         if (res.error) throw res.error;
 
         var prod = allProducts.find(function (p) { return p.id === productId; });
+        var oldQty = prod ? prod.stock_quantity : null;
         if (prod) prod.stock_quantity = newQty;
 
         delete pendingChanges[productId];
+
+        window.MVB_AUDIT_LOG.log({
+          module: 'Inventory',
+          action: 'Stock Quantity Updated',
+          recordType: 'Product',
+          recordId: productId,
+          description: (window.MVB_USER ? window.MVB_USER.name : 'Someone') + ' updated stock quantity of Product "' +
+            (prod ? prod.name : productId) + '" from ' + oldQty + ' to ' + newQty + '.',
+          oldData: { stock_quantity: oldQty },
+          newData: { stock_quantity: newQty },
+        });
 
         // Update the input's original marker and clear dirty state without full re-render
         var row = tbody.querySelector('[data-product-id="' + productId + '"]');

@@ -1,5 +1,5 @@
 (async function () {
-  var RESTRICTED_PAGES = ['product-dashboard.html', 'inbound.html', 'outbound.html'];
+  var RESTRICTED_PAGES = ['product-dashboard.html', 'inbound.html', 'outbound.html', 'logs.html'];
   var ADMIN_LANDING    = 'invoice-generator.html';
 
   // ── Session check ─────────────────────────────────────────────────
@@ -56,6 +56,13 @@
       '<line x1="21" y1="12" x2="9" y2="12"/>' +
       '</svg>';
     settingsBtn.addEventListener('click', async function () {
+      if (window.MVB_AUDIT_LOG) {
+        window.MVB_AUDIT_LOG.log({
+          module: 'Auth',
+          action: 'Logout',
+          description: name + ' logged out.',
+        });
+      }
       await window.MVB_DB.auth.signOut();
       window.location.replace('login.html');
     });
@@ -78,6 +85,13 @@
 
   // Unassigned user — sign them out and back to login
   if (!role) {
+    if (window.MVB_AUDIT_LOG) {
+      window.MVB_AUDIT_LOG.log({
+        module: 'Auth',
+        action: 'Logout',
+        description: name + ' was automatically signed out (no role assigned).',
+      });
+    }
     await window.MVB_DB.auth.signOut();
     window.location.replace('login.html');
     return;

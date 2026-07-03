@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Medivex GRN</title>
+    <title>Medivex Activity Log</title>
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body style="visibility:hidden">
@@ -47,7 +47,7 @@
             <svg class="sidebar__link-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
             Supplier orders
           </a>
-          <a class="sidebar__link sidebar__link--active" href="grn.html">
+          <a class="sidebar__link" href="grn.html">
             <svg class="sidebar__link-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>
             GRN
           </a>
@@ -75,9 +75,9 @@
           </a>
 
           <p class="sidebar__section-label" data-power-only>Reports</p>
-          <a class="sidebar__link" href="logs.html" data-power-only>
+          <a class="sidebar__link sidebar__link--active" href="logs.html" data-power-only>
             <svg class="sidebar__link-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-            Reports
+            Activity Log
           </a>
         </nav>
 
@@ -95,111 +95,144 @@
 
       <!-- ── Main ─────────────────────────────────────────────────── -->
       <div class="erp-main">
-        <div class="grn-shell">
+        <div class="pdash-shell">
 
-          <!-- Page header -->
           <div class="pdash-header">
             <div class="pdash-header__copy">
-              <p class="eyebrow">Purchasing</p>
-              <h1>Goods Received Notes</h1>
-              <p>Select pending supplier orders to generate a GRN, review the PDF, then confirm to update stock.</p>
+              <p class="eyebrow">Reports</p>
+              <h1>Activity Log</h1>
+              <p>Complete, permanent record of user activity across the ERP. Power users only.</p>
             </div>
           </div>
 
-          <!-- Part 1: Pending orders -->
-          <div class="grn-section" id="grn-pending-section">
-            <div class="grn-section-hd">
-              <div>
-                <p class="section-kicker">Part 1</p>
-                <h2>Pending Supplier Orders</h2>
-              </div>
-            </div>
-
-            <div class="grn-metrics">
-              <article class="summary-card">
-                <span>Pending Orders</span>
-                <strong id="grn-pending-count">—</strong>
-              </article>
-              <article class="summary-card">
-                <span>Total Units</span>
-                <strong id="grn-pending-units">—</strong>
-              </article>
-              <article class="summary-card">
-                <span>Aggregate Net Total</span>
-                <strong id="grn-pending-total">—</strong>
-              </article>
-            </div>
-
-            <div class="grn-batch-bar">
-              <div class="grn-batch-bar__summary">
-                <strong id="grn-selected-count">0 orders selected</strong>
-              </div>
-              <div class="grn-batch-bar__actions">
-                <button id="grn-select-all" type="button" class="button button--soft" disabled>Select All</button>
-                <button id="grn-clear-all" type="button" class="button button--ghost" disabled>Clear</button>
-                <button id="grn-generate-btn" type="button" class="button button--primary" disabled>Generate GRN</button>
-              </div>
-            </div>
-
-            <div id="grn-pending-list" class="orders-list">
-              <div class="orders-empty">Loading pending orders…</div>
-            </div>
+          <!-- Summary metrics -->
+          <div class="grn-metrics" style="margin-bottom: 20px;">
+            <article class="summary-card">
+              <span>Entries (filtered)</span>
+              <strong id="log-metric-total">—</strong>
+            </article>
+            <article class="summary-card">
+              <span>Today</span>
+              <strong id="log-metric-today">—</strong>
+            </article>
+            <article class="summary-card">
+              <span>Failed actions</span>
+              <strong id="log-metric-failed" class="sl-metric--danger">—</strong>
+            </article>
           </div>
 
-          <!-- Part 2: GRN Register -->
-          <div class="grn-section">
-            <div class="grn-section-hd">
-              <div>
-                <p class="section-kicker">Part 2</p>
-                <h2>GRN Register</h2>
+          <div class="pdash-panel">
+            <div class="log-filters">
+              <div class="log-filters__row">
+                <input class="pdash-search" id="log-keyword" type="search" placeholder="Search description, user, module, action…" autocomplete="off" />
+                <label class="log-filter-label">From <input type="date" id="log-date-from" class="co-filter" /></label>
+                <label class="log-filter-label">To <input type="date" id="log-date-to" class="co-filter" /></label>
               </div>
-              <article class="summary-card grn-reg-metric">
-                <span>Confirmed GRNs</span>
-                <strong id="grn-reg-count">—</strong>
-              </article>
+              <div class="log-filters__row">
+                <select id="log-user" class="co-filter"><option value="">All users</option></select>
+                <select id="log-role" class="co-filter">
+                  <option value="">All roles</option>
+                  <option value="manager">Manager</option>
+                  <option value="ceo">CEO</option>
+                  <option value="tech_lead">Tech Lead</option>
+                  <option value="admin">Admin</option>
+                </select>
+                <select id="log-module" class="co-filter"><option value="">All modules</option></select>
+                <select id="log-action" class="co-filter"><option value="">All actions</option></select>
+                <select id="log-record-type" class="co-filter"><option value="">All record types</option></select>
+                <select id="log-success" class="co-filter">
+                  <option value="">Success + Failed</option>
+                  <option value="true">Success only</option>
+                  <option value="false">Failed only</option>
+                </select>
+                <button class="button" id="log-clear-filters" type="button">Clear filters</button>
+                <button class="button button--primary" id="log-export" type="button">Export to Excel</button>
+              </div>
             </div>
 
             <div class="pdash-table-wrap">
               <table class="pdash-table">
-                <thead>
+                <thead id="log-thead">
                   <tr>
-                    <th>GRN No.</th>
-                    <th>Supplier</th>
-                    <th>Reference</th>
-                    <th>Date</th>
-                    <th>Net Total (LKR)</th>
-                    <th></th>
+                    <th style="width:32px;"></th>
+                    <th data-col="created_at" class="pdash-th-sort pdash-th-sort--active">Timestamp <span class="pdash-sort-icon">↓</span></th>
+                    <th data-col="user_name" class="pdash-th-sort">User <span class="pdash-sort-icon"></span></th>
+                    <th>Role</th>
+                    <th data-col="module" class="pdash-th-sort">Module <span class="pdash-sort-icon"></span></th>
+                    <th data-col="action" class="pdash-th-sort">Action <span class="pdash-sort-icon"></span></th>
+                    <th>Record</th>
+                    <th>Description</th>
+                    <th style="width:70px;">Status</th>
                   </tr>
                 </thead>
-                <tbody id="grn-register-tbody">
-                  <tr><td colspan="6" class="pdash-empty">Loading…</td></tr>
+                <tbody id="log-tbody">
+                  <tr><td colspan="9" class="pdash-empty">Loading…</td></tr>
                 </tbody>
               </table>
             </div>
+
+            <div class="log-pagination">
+              <span id="log-page-summary">—</span>
+              <div class="log-pagination__buttons">
+                <button class="button" id="log-prev-page" type="button">&larr; Prev</button>
+                <button class="button" id="log-next-page" type="button">Next &rarr;</button>
+              </div>
+            </div>
           </div>
 
-        </div>
-      </div>
-
-      <!-- GRN Confirmation Bar (shown after generating PDF) -->
-      <div id="grn-confirm-bar" class="grn-confirm-bar grn-confirm-bar--hidden">
-        <div class="grn-confirm-bar__copy">
-          <strong>GRN generated</strong>
-          <span>Review the PDF that opened, then save to the Inbound queue for manager confirmation — or discard to return.</span>
-        </div>
-        <div class="grn-confirm-bar__actions">
-          <button id="grn-confirm-btn" type="button" class="button button--primary">Save to Inbound</button>
-          <button id="grn-discard-btn" type="button" class="button button--ghost">Discard</button>
         </div>
       </div>
 
     </div>
 
+    <style>
+      .log-filters { padding: 16px 20px 4px; display: flex; flex-direction: column; gap: 10px; }
+      .log-filters__row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+      .log-filters__row .pdash-search { flex: 1 1 260px; min-width: 200px; }
+      .log-filter-label { display: flex; align-items: center; gap: 6px; font-size: 0.8rem; color: var(--ink-soft); }
+      .log-filter-label input[type="date"] { padding: 6px 8px; }
+
+      .log-detail-row--hidden { display: none; }
+      .log-detail-cell { padding: 12px 20px !important; background: rgba(247, 250, 255, 0.7); }
+
+      .log-diff-empty { margin: 0; padding: 4px 0; color: var(--ink-soft); font-size: 0.83rem; }
+
+      .log-diff-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; max-width: 640px; }
+      .log-diff-row {
+        display: grid; grid-template-columns: 160px 1fr auto 1fr; align-items: center; gap: 10px;
+        padding: 6px 10px; border-radius: 6px; font-size: 0.83rem;
+      }
+      .log-diff-row:nth-child(odd) { background: rgba(255,255,255,0.6); }
+      .log-diff-row--single { grid-template-columns: 160px 1fr; }
+
+      .log-diff-field { font-weight: 600; color: var(--ink-soft); }
+      .log-diff-old { color: #9a3412; text-decoration: line-through; text-decoration-color: rgba(154,52,18,0.4); }
+      .log-diff-new { color: #15803d; font-weight: 600; }
+      .log-diff-arrow { color: var(--ink-soft); text-align: center; }
+      .log-diff-value { color: var(--ink); }
+
+      .log-badge { display: inline-block; padding: 2px 8px; border-radius: 6px; font-size: 0.72rem; font-weight: 700; }
+      .log-badge--success { background: rgba(22, 163, 74, 0.1); color: #16a34a; }
+      .log-badge--failed  { background: rgba(220, 38, 38, 0.1); color: #dc2626; }
+
+      .log-pagination {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 14px 20px; font-size: 0.82rem; color: var(--ink-soft);
+      }
+      .log-pagination__buttons { display: flex; gap: 8px; }
+
+      .log-expand-btn {
+        display: inline-flex; align-items: center; justify-content: center;
+        width: 24px; height: 24px; border: 1px solid var(--line-strong); border-radius: 6px;
+        background: transparent; color: var(--ink-soft); cursor: pointer; padding: 0;
+      }
+      .log-expand-btn svg { width: 12px; height: 12px; stroke: currentColor; fill: none; stroke-width: 2.5; transition: transform 0.2s; }
+      .log-expand-btn--open svg { transform: rotate(180deg); }
+    </style>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="supabase-config.js"></script>
     <script src="auth.js"></script>
     <script src="audit-log.js"></script>
-    <script src="grn-pdf.js"></script>
-    <script src="grn.js"></script>
+    <script src="logs.js"></script>
   </body>
 </html>

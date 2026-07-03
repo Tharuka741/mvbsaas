@@ -279,6 +279,15 @@
           .update({ grn_id: grnRes.data[0].id })
           .eq('id', ord.id);
         if (linkRes.error) throw linkRes.error;
+
+        window.MVB_AUDIT_LOG.log({
+          module: 'GRN',
+          action: 'GRN Saved',
+          recordType: 'GRN',
+          recordId: grnRes.data[0].id,
+          description: (window.MVB_USER ? window.MVB_USER.name : 'Someone') + ' saved GRN #' + grnRes.data[0].id + ' for Supplier Order "' + (ord.supplier_name || ord.id) + '" to Inbound.',
+          newData: { grn_id: grnRes.data[0].id, supplier_order_id: ord.id, status: 'pending' },
+        });
       }
 
       pendingGrnState = null;

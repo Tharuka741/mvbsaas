@@ -247,6 +247,17 @@
     if (!order) return;
     if (order.outbound_confirmed) {
       window.alert('This order has been confirmed for dispatch and cannot be deleted.');
+
+      window.MVB_AUDIT_LOG.log({
+        module: 'Customer Orders',
+        action: 'Delete',
+        recordType: 'Customer Order',
+        recordId: orderId,
+        description: (window.MVB_USER ? window.MVB_USER.name : 'Someone') + ' attempted to delete Customer Order ' +
+          (order.order_number || order.invoice_number || ('#' + orderId)) + ' but failed — it has already been confirmed for dispatch.',
+        success: false,
+      });
+
       return;
     }
     if (!window.confirm('Delete this order? This cannot be undone.')) return;
@@ -258,6 +269,15 @@
       delete loadedItems[orderId];
       allOrders = allOrders.filter(function (o) { return o.id !== orderId; });
       applyFilter();
+
+      window.MVB_AUDIT_LOG.log({
+        module: 'Customer Orders',
+        action: 'Delete',
+        recordType: 'Customer Order',
+        recordId: orderId,
+        description: (window.MVB_USER ? window.MVB_USER.name : 'Someone') + ' deleted Customer Order ' + (order.order_number || order.invoice_number || ('#' + orderId)) + '.',
+        oldData: order,
+      });
     } catch (err) {
       console.error('Failed to delete order:', err);
       window.alert('Could not delete the order. Please try again.');
@@ -320,6 +340,8 @@
   }
 
   async function updateOrderStatus(orderId, newStatus) {
+    var order = allOrders.find(function (o) { return o.id === orderId; });
+    var oldStatus = order ? order.status : null;
     try {
       var result = await db
         .from('customer_orders')
@@ -328,8 +350,18 @@
 
       if (result.error) throw result.error;
 
-      var order = allOrders.find(function (o) { return o.id === orderId; });
       if (order) order.status = newStatus;
+
+      window.MVB_AUDIT_LOG.log({
+        module: 'Customer Orders',
+        action: 'Payment Status Changed',
+        recordType: 'Customer Order',
+        recordId: orderId,
+        description: (window.MVB_USER ? window.MVB_USER.name : 'Someone') + ' changed payment status of Customer Order ' +
+          (order ? (order.order_number || order.invoice_number || ('#' + orderId)) : ('#' + orderId)) + ' from ' + oldStatus + ' to ' + newStatus + '.',
+        oldData: { status: oldStatus },
+        newData: { status: newStatus },
+      });
     } catch (err) {
       console.error('Failed to update order status:', err);
       window.alert('Could not update the order status. Please try again.');

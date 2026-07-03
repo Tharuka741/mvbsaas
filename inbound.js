@@ -138,6 +138,16 @@
       var ord   = grn && grn.supplier_orders && grn.supplier_orders[0];
       var items = ord ? (ord.supplier_order_items || []) : [];
 
+      window.MVB_AUDIT_LOG.log({
+        module: 'GRN',
+        action: 'GRN Confirmed',
+        recordType: 'GRN',
+        recordId: grnId,
+        description: (window.MVB_USER ? window.MVB_USER.name : 'Someone') + ' confirmed GRN #' + grnId + '.',
+        oldData: { status: 'pending' },
+        newData: { status: 'confirmed', confirmed_at: now },
+      });
+
       var stockMap = {};
       items.forEach(function (item) {
         stockMap[item.product_name] = (stockMap[item.product_name] || 0) + item.quantity + (item.foc || 0);
@@ -150,10 +160,22 @@
         var fetchRes = await db.from('products').select('id, stock_quantity').eq('name', name);
         if (!fetchRes.error && fetchRes.data) {
           for (var j = 0; j < fetchRes.data.length; j++) {
-            var prod = fetchRes.data[j];
+            var prod   = fetchRes.data[j];
+            var oldQty = prod.stock_quantity || 0;
+            var newQty = oldQty + qty;
             await db.from('products').update({
-              stock_quantity: (prod.stock_quantity || 0) + qty,
+              stock_quantity: newQty,
             }).eq('id', prod.id);
+
+            window.MVB_AUDIT_LOG.log({
+              module: 'Inbound',
+              action: 'Stock Received',
+              recordType: 'Product',
+              recordId: prod.id,
+              description: (window.MVB_USER ? window.MVB_USER.name : 'Someone') + ' received stock for Product "' + name + '" via GRN #' + grnId + ', updating quantity from ' + oldQty + ' to ' + newQty + '.',
+              oldData: { stock_quantity: oldQty },
+              newData: { stock_quantity: newQty },
+            });
           }
         }
       }
@@ -185,6 +207,8 @@
     confirmBtn.disabled = true;
     downloadBtn.disabled = true;
 
+    var grnToReject = pendingGrns.find(function (g) { return g.id === grnId; });
+
     try {
       // Mark the supplier order as GRN rejected (stays out of pending list)
       var remarkRes = await db.from('supplier_orders')
@@ -198,6 +222,20 @@
 
       pendingGrns = pendingGrns.filter(function (g) { return g.id !== grnId; });
       renderPendingGrns();
+
+      window.MVB_AUDIT_LOG.log({
+        module: 'GRN',
+        action: 'GRN Rejected',
+        recordType: 'GRN',
+        recordId: grnId,
+        description: (window.MVB_USER ? window.MVB_USER.name : 'Someone') + ' rejected GRN #' + grnId + '.',
+        oldData: grnToReject ? {
+          batch_date: grnToReject.batch_date,
+          status: grnToReject.status,
+          net_total: grnToReject.net_total,
+          total_items: grnToReject.total_items,
+        } : null,
+      });
     } catch (err) {
       console.error('Failed to reject GRN:', err && (err.message || err.details || err));
       window.alert('Could not reject the GRN. Please try again.');

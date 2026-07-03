@@ -407,6 +407,15 @@ async function saveCustomerOrder(invoiceData) {
         amount: item.amount,
       }))
     );
+
+    window.MVB_AUDIT_LOG.log({
+      module: 'Customer Orders',
+      action: 'Create',
+      recordType: 'Customer Order',
+      recordId: orderId,
+      description: (window.MVB_USER ? window.MVB_USER.name : 'Someone') + ` created Customer Order ${invoiceData.invoiceNumber} for a total of ${invoiceData.total}.`,
+      newData: { invoice_number: invoiceData.invoiceNumber, total_amount: invoiceData.total, item_count: invoiceData.lineItems.length },
+    });
   } catch (err) {
     console.error('Error saving customer order:', err);
   }

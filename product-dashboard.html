@@ -75,7 +75,7 @@
           </a>
 
           <p class="sidebar__section-label" data-power-only>Reports</p>
-          <a class="sidebar__link" href="#" data-power-only>
+          <a class="sidebar__link" href="logs.html" data-power-only>
             <svg class="sidebar__link-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
             Reports
           </a>
@@ -141,6 +141,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="supabase-config.js"></script>
     <script src="auth.js"></script>
+    <script src="audit-log.js"></script>
     <script>
       (function () {
         var db = window.MVB_DB;
@@ -375,6 +376,15 @@
           allProducts.unshift(result.data[0]);
           addingNew = false;
           render();
+
+          window.MVB_AUDIT_LOG.log({
+            module: 'Products',
+            action: 'Create',
+            recordType: 'Product',
+            recordId: result.data[0].id,
+            description: (window.MVB_USER ? window.MVB_USER.name : 'Someone') + ' created Product "' + name + '".',
+            newData: result.data[0],
+          });
         }
 
         // ── Delete ────────────────────────────────────────────────
@@ -382,12 +392,23 @@
         async function deleteProduct(id) {
           if (!confirm('Delete this product? This cannot be undone.')) return;
 
+          var existing = allProducts.find(function (p) { return p.id === id; });
+
           var result = await db.from('products').delete().eq('id', id);
           if (result.error) { alert('Failed to delete. Please try again.'); return; }
 
           allProducts = allProducts.filter(function (p) { return p.id !== id; });
           delete pendingUpdates[id];
           render();
+
+          window.MVB_AUDIT_LOG.log({
+            module: 'Products',
+            action: 'Delete',
+            recordType: 'Product',
+            recordId: id,
+            description: (window.MVB_USER ? window.MVB_USER.name : 'Someone') + ' deleted Product "' + (existing ? existing.name : id) + '".',
+            oldData: existing,
+          });
         }
 
         // ── Save ──────────────────────────────────────────────────
@@ -411,8 +432,38 @@
 
           if (!hasError) {
             ids.forEach(function (id) {
-              var idx = allProducts.findIndex(function (p) { return p.id === parseInt(id); });
-              if (idx !== -1) Object.assign(allProducts[idx], pendingUpdates[parseInt(id)]);
+              var numId = parseInt(id);
+              var idx = allProducts.findIndex(function (p) { return p.id === numId; });
+              var oldData = idx !== -1 ? Object.assign({}, allProducts[idx]) : null;
+              var newFields = pendingUpdates[numId];
+              if (idx !== -1) Object.assign(allProducts[idx], newFields);
+
+              var changed = Object.keys(newFields).filter(function (field) {
+                return !oldData || oldData[field] !== newFields[field];
+              });
+              var productName = (idx !== -1 ? allProducts[idx].name : null) || (oldData && oldData.name) || numId;
+
+              // Only log the fields that actually changed — not every
+              // editable column, and never bookkeeping columns like id/
+              // stock_quantity/updated_at that weren't part of this edit.
+              var trimmedOld = {}, trimmedNew = {};
+              changed.forEach(function (field) {
+                trimmedOld[field] = oldData ? oldData[field] : null;
+                trimmedNew[field] = newFields[field];
+              });
+              var changedLabels = changed.map(function (field) {
+                return field.replace(/_/g, ' ');
+              });
+
+              window.MVB_AUDIT_LOG.log({
+                module: 'Products',
+                action: 'Update',
+                recordType: 'Product',
+                recordId: numId,
+                description: (window.MVB_USER ? window.MVB_USER.name : 'Someone') + ' updated ' + (changedLabels.join(', ') || 'fields') + ' of Product "' + productName + '".',
+                oldData: changed.length ? trimmedOld : null,
+                newData: changed.length ? trimmedNew : null,
+              });
             });
             pendingUpdates = {};
           }
