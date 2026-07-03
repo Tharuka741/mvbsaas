@@ -2,10 +2,7 @@
   var db = window.MVB_DB;
   var allOrders          = [];
   var currentFilter      = '';
-  var currentMonthFilter = (function () {
-    var now = new Date();
-    return now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
-  }());
+  var currentMonthFilter = '';
   var pdfDepsLoaded = false;
   var loadedItems   = {}; // orderId -> customer_order_items[]
 
@@ -201,8 +198,6 @@
       monthSelect.appendChild(opt);
     });
 
-    // If current month has no data, leave "All months" selected
-    if (!seen[currentMonthFilter]) currentMonthFilter = '';
   }
 
   function applyFilter() {
