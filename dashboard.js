@@ -25,8 +25,11 @@
 
   async function loadDashboard() {
     var now        = new Date();
-    var monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10);
-    var monthEnd   = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().slice(0, 10);
+    var y          = now.getFullYear();
+    var m          = String(now.getMonth() + 1).padStart(2, '0');
+    var lastDay    = new Date(y, now.getMonth() + 1, 0).getDate();
+    var monthStart = y + '-' + m + '-01';
+    var monthEnd   = y + '-' + m + '-' + String(lastDay).padStart(2, '0');
 
     var results = await Promise.all([
       // Revenue this month
