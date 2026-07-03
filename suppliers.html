@@ -101,10 +101,11 @@
             <div class="pdash-header__copy">
               <p class="eyebrow">Purchasing</p>
               <h1>Suppliers</h1>
-              <p>Manage the supplier directory. Suppliers are available for selection when creating orders and products.</p>
+              <p>Manage the supplier directory. Suppliers are available for selection when creating orders and products. Records can be edited but not deleted, to keep existing orders and products intact.</p>
             </div>
             <div class="pdash-header__actions">
               <button class="pdash-btn pdash-btn--ghost" id="btn-add-supplier">+ Add Supplier</button>
+              <button class="pdash-btn pdash-btn--primary" id="btn-save-suppliers" style="display:none;">Save Changes</button>
             </div>
           </div>
 
@@ -126,7 +127,6 @@
                     <th class="pdash-th-sort" data-sort="name">Supplier Name <span class="pdash-sort-icon"></span></th>
                     <th class="pdash-th-sort" data-sort="contact">Contact Person <span class="pdash-sort-icon"></span></th>
                     <th class="pdash-th-sort" data-sort="phone">Phone <span class="pdash-sort-icon"></span></th>
-                    <th></th>
                   </tr>
                 </thead>
                 <tbody id="suppliers-tbody"></tbody>
