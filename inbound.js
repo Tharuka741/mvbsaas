@@ -102,7 +102,7 @@
         .from('grns')
         .select('*, supplier_orders(*, supplier_order_items(*))')
         .eq('status', 'pending')
-        .order('id', { ascending: false });
+        .order('id', { ascending: true });
 
       if (result.error) throw result.error;
 

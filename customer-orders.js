@@ -126,7 +126,6 @@
     tbody.innerHTML = orders.map(function (order) {
       var customer  = (order.billed_to || '').split('\n')[0] || '—';
       var orderRef  = escapeHtml(order.order_number || order.invoice_number || '#' + order.id);
-      var canDelete = !order.outbound_confirmed;
 
       var summaryRow = (
         '<tr class="so-order-row" data-order-id="' + order.id + '">' +
@@ -156,11 +155,9 @@
             '<button class="so-expand-btn" data-action="expand-order" data-order-id="' + order.id + '" aria-label="Expand order details">' +
               '<svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>' +
             '</button>' +
-            (canDelete
-              ? '<button class="order-card__compact-delete pdash-delete-btn" data-action="delete-order" data-order-id="' + order.id + '" title="Delete order" aria-label="Delete order">' +
-                  '<svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>' +
-                '</button>'
-              : '') +
+            '<button class="order-card__compact-delete" data-action="delete-order" data-order-id="' + order.id + '" title="Delete order" aria-label="Delete order">' +
+              '<svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>' +
+            '</button>' +
           '</div>' +
         '</td>' +
         '</tr>'

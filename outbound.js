@@ -97,7 +97,7 @@
         .from('customer_orders')
         .select('*')
         .or('outbound_confirmed.is.null,outbound_confirmed.eq.false')
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: true });
 
       if (result.error) throw result.error;
 
