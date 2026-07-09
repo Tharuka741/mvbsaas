@@ -4,19 +4,11 @@
   var PAGE_SIZE = 50;
   var EXPORT_CAP = 5000;
 
-  // UI convenience lists — the audit_logs schema itself stays free-text so
-  // new modules/actions work immediately without touching this file. Add a
-  // new entry here whenever a new module starts logging so it's filterable.
-  var MODULES = [
-    'Auth', 'Products', 'Suppliers', 'Customers', 'Supplier Orders',
-    'GRN', 'Inbound', 'Outbound', 'Customer Orders', 'Inventory', 'System',
-  ];
-  var ACTIONS = [
-    'Login', 'Logout', 'Invite Accepted', 'Create', 'Update', 'Delete',
-    'GRN Saved', 'GRN Confirmed', 'GRN Rejected', 'Stock Received',
-    'Stock Quantity Updated', 'Stock Deducted', 'Dispatch Confirmed',
-    'Dispatch Rejected', 'Payment Status Changed', 'Export Generated',
-  ];
+  // Module and Action options are loaded dynamically from the DB (see
+  // refreshModuleOptions/refreshActionOptions below) so they cascade:
+  // choosing a User narrows Module to what that user has actually logged,
+  // and choosing a Module narrows Action the same way. Record Type stays a
+  // small hardcoded convenience list — it isn't part of the requested cascade.
   var RECORD_TYPES = [
     'Customer', 'Supplier', 'Product', 'Supplier Order', 'GRN', 'Customer Order',
   ];
@@ -124,18 +116,13 @@
     return role.replace('_', ' ').replace(/\b\w/g, function (c) { return c.toUpperCase(); });
   }
 
-  function populateStaticOptions() {
-    function fill(select, values) {
-      values.forEach(function (v) {
-        var opt = document.createElement('option');
-        opt.value = v;
-        opt.textContent = v;
-        select.appendChild(opt);
-      });
-    }
-    fill(els.module, MODULES);
-    fill(els.action, ACTIONS);
-    fill(els.recordType, RECORD_TYPES);
+  function populateRecordTypeOptions() {
+    RECORD_TYPES.forEach(function (v) {
+      var opt = document.createElement('option');
+      opt.value = v;
+      opt.textContent = v;
+      els.recordType.appendChild(opt);
+    });
   }
 
   async function populateUserFilter() {
@@ -150,6 +137,51 @@
       });
     } catch (err) {
       console.error('Failed to load users for filter:', err);
+    }
+  }
+
+  // ── Cascading Module/Action options ─────────────────────────────────
+  // Module is scoped to the selected User; Action is scoped to the
+  // selected User + Module. Both are read via RPC (see
+  // migration-audit-log-filters.sql) since PostgREST has no generic
+  // "distinct" query — this keeps the dropdowns fast and accurate no
+  // matter how large audit_logs grows.
+
+  function fillSelectPreservingValue(select, values, placeholderText) {
+    var previous = select.value;
+    select.innerHTML = '<option value="">' + placeholderText + '</option>';
+    values.forEach(function (v) {
+      var opt = document.createElement('option');
+      opt.value = v;
+      opt.textContent = v;
+      select.appendChild(opt);
+    });
+    if (values.indexOf(previous) !== -1) {
+      select.value = previous;
+      return previous;
+    }
+    return '';
+  }
+
+  async function refreshModuleOptions(userId) {
+    try {
+      var result = await db.rpc('audit_log_distinct_modules', { p_user_id: userId || null });
+      if (result.error) throw result.error;
+      var modules = (result.data || []).map(function (r) { return r.module; });
+      state.filters.module = fillSelectPreservingValue(els.module, modules, 'All modules');
+    } catch (err) {
+      console.error('Failed to load module filter options:', err);
+    }
+  }
+
+  async function refreshActionOptions(userId, module) {
+    try {
+      var result = await db.rpc('audit_log_distinct_actions', { p_user_id: userId || null, p_module: module || null });
+      if (result.error) throw result.error;
+      var actions = (result.data || []).map(function (r) { return r.action; });
+      state.filters.action = fillSelectPreservingValue(els.action, actions, 'All actions');
+    } catch (err) {
+      console.error('Failed to load action filter options:', err);
     }
   }
 
@@ -414,9 +446,8 @@
   });
 
   [
-    ['dateFrom', els.dateFrom], ['dateTo', els.dateTo], ['userId', els.user],
-    ['role', els.role], ['module', els.module], ['action', els.action],
-    ['recordType', els.recordType], ['success', els.success],
+    ['dateFrom', els.dateFrom], ['dateTo', els.dateTo],
+    ['role', els.role], ['recordType', els.recordType], ['success', els.success],
   ].forEach(function (pair) {
     var key = pair[0], el = pair[1];
     el.addEventListener('change', function () {
@@ -425,17 +456,38 @@
     });
   });
 
-  els.clearFilters.addEventListener('click', function () {
+  // User → Module → Action cascade: picking a User re-scopes the Module
+  // list to what that user has logged (and, transitively, the Action
+  // list); picking a Module re-scopes just the Action list.
+  els.user.addEventListener('change', async function () {
+    state.filters.userId = els.user.value;
+    await refreshModuleOptions(state.filters.userId);
+    await refreshActionOptions(state.filters.userId, state.filters.module);
+    resetToFirstPage();
+  });
+
+  els.module.addEventListener('change', async function () {
+    state.filters.module = els.module.value;
+    await refreshActionOptions(state.filters.userId, state.filters.module);
+    resetToFirstPage();
+  });
+
+  els.action.addEventListener('change', function () {
+    state.filters.action = els.action.value;
+    resetToFirstPage();
+  });
+
+  els.clearFilters.addEventListener('click', async function () {
     state.filters = { keyword: '', dateFrom: '', dateTo: '', userId: '', role: '', module: '', action: '', recordType: '', success: '' };
     els.keyword.value = '';
     els.dateFrom.value = '';
     els.dateTo.value = '';
     els.user.value = '';
     els.role.value = '';
-    els.module.value = '';
-    els.action.value = '';
     els.recordType.value = '';
     els.success.value = '';
+    await refreshModuleOptions(null);
+    await refreshActionOptions(null, null);
     resetToFirstPage();
   });
 
@@ -477,7 +529,9 @@
 
   els.exportBtn.addEventListener('click', exportToExcel);
 
-  populateStaticOptions();
+  populateRecordTypeOptions();
   populateUserFilter();
+  refreshModuleOptions(null);
+  refreshActionOptions(null, null);
   loadLogs();
 })();

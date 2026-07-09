@@ -111,7 +111,7 @@ function parseQuantity(quantityValue) {
 
   const quantity = Number.parseInt(normalized, 10);
 
-  if (!Number.isFinite(quantity) || quantity <= 0) {
+  if (!Number.isFinite(quantity) || quantity < 0) {
     return null;
   }
 

@@ -56,7 +56,6 @@ There is no single schema file — the schema is the union of the original (undo
 8. `migration-outbound-backfill.sql` — one-time backfill marking pre-existing `customer_orders` as `outbound_confirmed = true` (they predate the outbound workflow).
 9. `migration-audit-log.sql` — creates `audit_logs` (append-only, no update/delete policy for anyone) and adds a `power read all` select policy on `user_roles` (previously power users could only read their own row) so the log viewer's user filter can list names.
 10. `migration-admin-permissions.sql` — grants `admin` full update/delete parity with power users on the Sales & Purchasing tables (`customers`, `suppliers`, `customer_orders(_items)`, `supplier_orders(_items)`, `invoices`, `invoice_line_items`); drops the old blanket "admin update products stock" policy from `migration-stock.sql` so `admin` is strictly read-only on `products`.
-11. `migration-no-delete-directory.sql` — removes delete entirely from `customers` and `suppliers` for **every** role, including power users (supersedes the delete grants from steps 1 and 10 on those two tables). They're referenced by name from orders/invoices/products, not a foreign key, so deleting one would orphan existing records; edit is still allowed for everyone with directory access.
 
 These are plain scripts pasted into the Supabase SQL editor by hand — there's no migration runner or tracking table, so don't assume re-running one is idempotent beyond what each script's own `if not exists`/`if exists` guards provide.
 
