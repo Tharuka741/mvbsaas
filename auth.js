@@ -172,6 +172,42 @@
     });
   }
 
+  // ── Pending approval badges (Inbound / Outbound) ───────────────────
+  // Visible to every role — just a heads-up count, not a permission check.
+  (function loadPendingBadges() {
+    var badgeInbound  = document.getElementById('sidebar-badge-inbound');
+    var badgeOutbound = document.getElementById('sidebar-badge-outbound');
+    if (!badgeInbound && !badgeOutbound) return;
+
+    function showBadge(el, count) {
+      if (!el) return;
+      if (count > 0) {
+        el.textContent = count > 99 ? '99+' : String(count);
+        el.style.display = '';
+      } else {
+        el.style.display = 'none';
+      }
+    }
+
+    if (badgeInbound) {
+      window.MVB_DB.from('grns')
+        .select('id', { count: 'exact', head: true })
+        .eq('status', 'pending')
+        .then(function (res) {
+          if (!res.error) showBadge(badgeInbound, res.count || 0);
+        });
+    }
+
+    if (badgeOutbound) {
+      window.MVB_DB.from('customer_orders')
+        .select('id', { count: 'exact', head: true })
+        .or('outbound_confirmed.is.null,outbound_confirmed.eq.false')
+        .then(function (res) {
+          if (!res.error) showBadge(badgeOutbound, res.count || 0);
+        });
+    }
+  })();
+
   // ── Show page ─────────────────────────────────────────────────────
   document.body.style.visibility = 'visible';
 })();

@@ -1,6 +1,7 @@
 (function () {
   var db = window.MVB_DB;
   var allSuppliers = [];
+  var pendingUpdates = {}; // id -> { name, contact, phone }
   var addingNew = false;
   var searchQuery = '';
   var sortField = 'name';
@@ -9,6 +10,7 @@
   var tbody = document.getElementById('suppliers-tbody');
   var searchInput = document.getElementById('suppliers-search');
   var btnAdd = document.getElementById('btn-add-supplier');
+  var btnSave = document.getElementById('btn-save-suppliers');
 
   function esc(str) {
     return String(str == null ? '' : str)
@@ -16,6 +18,12 @@
       .replace(/</g, '&lt;')
       .replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;');
+  }
+
+  function get(id, field, fallback) {
+    return pendingUpdates[id] && Object.prototype.hasOwnProperty.call(pendingUpdates[id], field)
+      ? pendingUpdates[id][field]
+      : fallback;
   }
 
   // ── Sort ──────────────────────────────────────────────────────────
@@ -37,6 +45,18 @@
         ? (sortDir === 'asc' ? ' ↑' : ' ↓')
         : '';
     });
+  }
+
+  // ── Save button ───────────────────────────────────────────────────
+
+  function updateSaveButton() {
+    var count = Object.keys(pendingUpdates).length;
+    if (count > 0) {
+      btnSave.style.display = '';
+      btnSave.textContent = 'Save ' + count + ' change' + (count !== 1 ? 's' : '');
+    } else {
+      btnSave.style.display = 'none';
+    }
   }
 
   // ── Render ────────────────────────────────────────────────────────
@@ -69,17 +89,20 @@
 
     for (var i = 0; i < filtered.length; i++) {
       var s = filtered[i];
+      var dirty = !!pendingUpdates[s.id];
+      var name = get(s.id, 'name', s.name);
+      var contact = get(s.id, 'contact', s.contact);
+      var phone = get(s.id, 'phone', s.phone);
       html +=
-        '<tr data-id="' + s.id + '">' +
-        '<td><strong>' + esc(s.name) + '</strong></td>' +
-        '<td>' + esc(s.contact || '—') + '</td>' +
-        '<td>' + esc(s.phone || '—') + '</td>' +
-        '<td><button class="pdash-delete-btn" data-id="' + s.id + '" title="Delete">&#x2715;</button></td>' +
+        '<tr class="' + (dirty ? 'is-modified' : '') + '" data-id="' + s.id + '">' +
+        '<td><input class="pdash-cell-input" type="text" value="' + esc(name) + '" data-field="name" placeholder="Supplier name" autocomplete="off"></td>' +
+        '<td><input class="pdash-cell-input" type="text" value="' + esc(contact) + '" data-field="contact" placeholder="Contact person" autocomplete="off"></td>' +
+        '<td><input class="pdash-cell-input" type="tel" value="' + esc(phone) + '" data-field="phone" placeholder="Phone" autocomplete="off"></td>' +
         '</tr>';
     }
 
     if (!addingNew && filtered.length === 0) {
-      html = '<tr><td colspan="4" class="pdash-empty">' +
+      html = '<tr><td colspan="3" class="pdash-empty">' +
         (allSuppliers.length === 0 ? 'No suppliers yet. Click "+ Add Supplier" to create the first one.' : 'No suppliers match your search.') +
         '</td></tr>';
     }
@@ -92,10 +115,8 @@
   // ── Listeners ─────────────────────────────────────────────────────
 
   function attachListeners() {
-    tbody.querySelectorAll('.pdash-delete-btn').forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        deleteSupplier(parseInt(this.dataset.id));
-      });
+    tbody.querySelectorAll('[data-field]').forEach(function (input) {
+      input.addEventListener('input', onCellInput);
     });
 
     var confirmBtn = document.getElementById('confirm-add-supplier');
@@ -114,6 +135,21 @@
       var nameInput = document.getElementById('new-name');
       if (nameInput) setTimeout(function () { nameInput.focus(); }, 0);
     }
+  }
+
+  function onCellInput() {
+    var row = this.closest('tr');
+    var id = parseInt(row.dataset.id);
+    var field = this.dataset.field;
+
+    if (!pendingUpdates[id]) {
+      var s = allSuppliers.find(function (s) { return s.id === id; });
+      pendingUpdates[id] = { name: s.name, contact: s.contact, phone: s.phone };
+    }
+
+    pendingUpdates[id][field] = this.value;
+    row.classList.add('is-modified');
+    updateSaveButton();
   }
 
   // ── Add ───────────────────────────────────────────────────────────
@@ -174,35 +210,67 @@
     }
   }
 
-  // ── Delete ────────────────────────────────────────────────────────
+  // ── Save edits ────────────────────────────────────────────────────
 
-  async function deleteSupplier(id) {
-    if (!window.confirm('Remove this supplier from the directory?')) return;
-    var existing = allSuppliers.find(function (s) { return s.id === id; });
-    try {
-      var result = await db.from('suppliers').delete().eq('id', id);
-      if (result.error) throw result.error;
-      allSuppliers = allSuppliers.filter(function (s) { return s.id !== id; });
-      render();
+  async function save() {
+    var ids = Object.keys(pendingUpdates);
+    if (!ids.length) return;
 
-      window.MVB_AUDIT_LOG.log({
-        module: 'Suppliers',
-        action: 'Delete',
-        recordType: 'Supplier',
-        recordId: id,
-        description: (window.MVB_USER ? window.MVB_USER.name : 'Someone') + ' deleted Supplier "' + (existing ? existing.name : id) + '".',
-        oldData: existing,
+    btnSave.disabled = true;
+    btnSave.textContent = 'Saving…';
+
+    var results = await Promise.all(
+      ids.map(function (id) {
+        return db.from('suppliers').update(pendingUpdates[parseInt(id)]).eq('id', parseInt(id));
+      })
+    );
+
+    var hasError = results.some(function (r) { return r && r.error; });
+
+    if (!hasError) {
+      ids.forEach(function (id) {
+        var numId = parseInt(id);
+        var idx = allSuppliers.findIndex(function (s) { return s.id === numId; });
+        var oldData = idx !== -1 ? Object.assign({}, allSuppliers[idx]) : null;
+        var newFields = pendingUpdates[numId];
+        if (idx !== -1) Object.assign(allSuppliers[idx], newFields);
+
+        var changed = Object.keys(newFields).filter(function (field) {
+          return !oldData || oldData[field] !== newFields[field];
+        });
+        var supplierName = (idx !== -1 ? allSuppliers[idx].name : null) || (oldData && oldData.name) || numId;
+
+        var trimmedOld = {}, trimmedNew = {};
+        changed.forEach(function (field) {
+          trimmedOld[field] = oldData ? oldData[field] : null;
+          trimmedNew[field] = newFields[field];
+        });
+
+        window.MVB_AUDIT_LOG.log({
+          module: 'Suppliers',
+          action: 'Update',
+          recordType: 'Supplier',
+          recordId: numId,
+          description: (window.MVB_USER ? window.MVB_USER.name : 'Someone') + ' updated ' + (changed.join(', ') || 'fields') + ' of Supplier "' + supplierName + '".',
+          oldData: changed.length ? trimmedOld : null,
+          newData: changed.length ? trimmedNew : null,
+        });
       });
-    } catch (err) {
-      console.error('Failed to delete supplier:', err);
-      window.alert('Could not remove supplier. Please try again.');
+      pendingUpdates = {};
     }
+
+    btnSave.disabled = false;
+    btnSave.textContent = hasError ? 'Error — try again' : 'Saved!';
+    setTimeout(function () {
+      if (!hasError) render();
+      updateSaveButton();
+    }, 1200);
   }
 
   // ── Load ──────────────────────────────────────────────────────────
 
   async function loadSuppliers() {
-    tbody.innerHTML = '<tr><td colspan="4" class="pdash-empty">Loading…</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="3" class="pdash-empty">Loading…</td></tr>';
     try {
       var result = await db.from('suppliers').select('*').order('name');
       if (result.error) throw result.error;
@@ -210,7 +278,7 @@
       render();
     } catch (err) {
       console.error('Failed to load suppliers:', err);
-      tbody.innerHTML = '<tr><td colspan="4" class="pdash-empty">Could not load suppliers. Please refresh.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="3" class="pdash-empty">Could not load suppliers. Please refresh.</td></tr>';
     }
   }
 
@@ -222,6 +290,8 @@
     btnAdd.disabled = true;
     render();
   });
+
+  btnSave.addEventListener('click', save);
 
   searchInput.addEventListener('input', function () {
     searchQuery = this.value;

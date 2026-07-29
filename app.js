@@ -7,6 +7,7 @@ const productLookup = new Map(products.map((product) => [product.name, product])
 const refs = {
   downloadPdf: document.getElementById("download-pdf"),
   invoiceNumber: document.getElementById("invoice-number"),
+  invoiceNumberWarning: document.getElementById("invoice-number-warning"),
   invoiceDate: document.getElementById("invoice-date"),
   dueDate: document.getElementById("due-date"),
   billedTo: document.getElementById("billed-to"),
@@ -168,13 +169,18 @@ function getSelectedLineItems() {
     .filter(Boolean);
 }
 
+function getFullInvoiceNumber() {
+  const sequence = refs.invoiceNumber.value.trim();
+  return sequence ? `MED/${sequence}` : "MED/------";
+}
+
 function getInvoiceData() {
   const lineItems = getSelectedLineItems();
   const subtotal = lineItems.reduce((sum, item) => sum + item.amount, 0);
   const totalQuantity = lineItems.reduce((sum, item) => sum + item.quantity, 0);
 
   return {
-    invoiceNumber: refs.invoiceNumber.value.trim() || "MED/------",
+    invoiceNumber: getFullInvoiceNumber(),
     invoiceDateValue: refs.invoiceDate.value,
     invoiceDateLabel: formatInvoiceDate(refs.invoiceDate.value),
     dueDateValue: refs.dueDate.value,
@@ -197,24 +203,62 @@ function escapeHtml(value) {
     .replaceAll("'", "&#39;");
 }
 
-function createInvoiceNumber(dateValue) {
-  const stamp = (dateValue || toInputDate(new Date())).replaceAll("-", "");
-  const storageKey = "medivex-invoice-sequence";
-  let sequence = 1;
-
+async function getNextInvoiceSequence() {
   try {
-    const existing = JSON.parse(window.localStorage.getItem(storageKey) || "{}");
+    const result = await window.MVB_DB
+      .from("customer_orders")
+      .select("invoice_number")
+      .order("id", { ascending: false })
+      .limit(50);
 
-    if (existing.stamp === stamp && Number.isInteger(existing.sequence)) {
-      sequence = existing.sequence + 1;
-    }
+    if (result.error || !result.data) return "00001";
 
-    window.localStorage.setItem(storageKey, JSON.stringify({ stamp, sequence }));
+    let maxSequence = 0;
+    result.data.forEach((row) => {
+      const match = /^MED\/(\d+)$/.exec(row.invoice_number || "");
+      if (match) {
+        maxSequence = Math.max(maxSequence, parseInt(match[1], 10));
+      }
+    });
+
+    return String(maxSequence + 1).padStart(5, "0");
   } catch (_error) {
-    sequence = 1;
+    return "00001";
+  }
+}
+
+let invoiceNumberCheckToken = 0;
+let invoiceNumberCheckTimer = null;
+
+async function checkInvoiceNumberAvailability() {
+  const value = refs.invoiceNumber.value.trim();
+  const token = ++invoiceNumberCheckToken;
+
+  if (!value) {
+    refs.invoiceNumberWarning.classList.remove("is-visible");
+    return;
   }
 
-  return `MED/${stamp.slice(2)}-${String(sequence).padStart(3, "0")}`;
+  try {
+    const result = await window.MVB_DB
+      .from("customer_orders")
+      .select("id")
+      .eq("invoice_number", `MED/${value}`)
+      .limit(1);
+
+    if (token !== invoiceNumberCheckToken) return;
+
+    const isDuplicate = !result.error && result.data && result.data.length > 0;
+    refs.invoiceNumberWarning.classList.toggle("is-visible", isDuplicate);
+  } catch (_error) {
+    // Network/DB issue — don't surface a false warning.
+  }
+}
+
+function scheduleInvoiceNumberCheck() {
+  refs.invoiceNumberWarning.classList.remove("is-visible");
+  window.clearTimeout(invoiceNumberCheckTimer);
+  invoiceNumberCheckTimer = window.setTimeout(checkInvoiceNumberAvailability, 400);
 }
 
 function setButtonBusy(button, isBusy, idleLabel, busyLabel) {
@@ -393,7 +437,8 @@ async function saveCustomerOrder(invoiceData) {
 
     if (result.error || !result.data || !result.data.length) {
       console.error('Failed to save customer order:', result.error);
-      return;
+      const isDuplicate = Boolean(result.error && result.error.code === '23505');
+      return { ok: false, duplicate: isDuplicate };
     }
 
     const orderId = result.data[0].id;
@@ -416,8 +461,11 @@ async function saveCustomerOrder(invoiceData) {
       description: (window.MVB_USER ? window.MVB_USER.name : 'Someone') + ` created Customer Order ${invoiceData.invoiceNumber} for a total of ${invoiceData.total}.`,
       newData: { invoice_number: invoiceData.invoiceNumber, total_amount: invoiceData.total, item_count: invoiceData.lineItems.length },
     });
+
+    return { ok: true, orderId };
   } catch (err) {
     console.error('Error saving customer order:', err);
+    return { ok: false, duplicate: false };
   }
 }
 
@@ -439,8 +487,18 @@ async function downloadInvoicePdf() {
   setButtonBusy(refs.downloadPdf, true, "Download PDF", "Generating PDF...");
 
   try {
+    const saveResult = await saveCustomerOrder(invoiceData);
+
+    if (!saveResult.ok) {
+      window.alert(
+        saveResult.duplicate
+          ? `This invoice number (${invoiceData.invoiceNumber}) is already in use. Change it before downloading.`
+          : "The order could not be saved, so the invoice was not downloaded. Please try again."
+      );
+      return;
+    }
+
     await window.MEDIVEX_PDF_GENERATOR.download(invoiceData);
-    await saveCustomerOrder(invoiceData);
   } catch (error) {
     console.error(error);
     window.alert("The PDF could not be generated. Please try again.");
@@ -470,15 +528,19 @@ async function loadCustomers() {
   }
 }
 
-function resetForm() {
+async function resetForm() {
   const today = toInputDate(new Date());
   refs.invoiceDate.value = today;
-  refs.invoiceNumber.value = createInvoiceNumber(today);
+  refs.invoiceNumber.value = "";
+  refs.invoiceNumberWarning.classList.remove("is-visible");
   refs.billedTo.value = "";
   if (refs.customerSelect) refs.customerSelect.value = "";
   state.lineItems = [createLineItem()];
   renderLineItems();
   syncUi();
+
+  refs.invoiceNumber.value = await getNextInvoiceSequence();
+  renderPreview();
 }
 
 refs.addItem.addEventListener("click", () => {
@@ -495,7 +557,14 @@ refs.resetForm.addEventListener("click", () => {
   resetForm();
 });
 
-refs.invoiceNumber.addEventListener("input", renderPreview);
+refs.invoiceNumber.addEventListener("input", () => {
+  const sanitized = refs.invoiceNumber.value.replace(/[^\d]/g, "");
+  if (sanitized !== refs.invoiceNumber.value) {
+    refs.invoiceNumber.value = sanitized;
+  }
+  renderPreview();
+  scheduleInvoiceNumberCheck();
+});
 refs.invoiceDate.addEventListener("input", syncUi);
 refs.invoiceDate.addEventListener("change", syncUi);
 refs.billedTo.addEventListener("input", renderPreview);

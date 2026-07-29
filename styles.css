@@ -222,6 +222,7 @@ button {
 .field-grid {
   display: grid;
   gap: 16px;
+  align-items: start;
 }
 
 .field-grid--two {
@@ -244,6 +245,15 @@ button {
 
 .field small {
   color: var(--ink-soft);
+}
+
+.field small.field-warning {
+  color: #dc2626;
+  visibility: hidden;
+}
+
+.field small.field-warning.is-visible {
+  visibility: visible;
 }
 
 .field input,
@@ -278,6 +288,45 @@ button {
 .field input[readonly] {
   color: var(--ink-soft);
   background: rgba(240, 244, 251, 0.92);
+}
+
+.field-prefix-group {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: rgba(247, 250, 255, 0.92);
+  padding-left: 16px;
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    transform 160ms ease;
+}
+
+.field-prefix-group__prefix {
+  color: var(--ink-soft);
+  font-weight: 600;
+  user-select: none;
+}
+
+.field-prefix-group input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: transparent;
+  padding: 14px 16px 14px 4px;
+}
+
+.field-prefix-group input:focus {
+  box-shadow: none;
+  transform: none;
+}
+
+.field-prefix-group:focus-within {
+  border-color: rgba(21, 71, 150, 0.5);
+  box-shadow: 0 0 0 4px rgba(21, 71, 150, 0.12);
+  transform: translateY(-1px);
 }
 
 .toggle-card {
@@ -1992,6 +2041,12 @@ button {
 
 .sidebar__link--active .sidebar__badge {
   background: rgba(255, 255, 255, 0.25);
+}
+
+.sidebar__link .sidebar__badge--alert,
+.sidebar__link--active .sidebar__badge--alert {
+  background: #dc2626;
+  color: #ffffff;
 }
 
 .sidebar__footer {

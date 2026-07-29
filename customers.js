@@ -1,6 +1,7 @@
 (function () {
   var db = window.MVB_DB;
   var allCustomers = [];
+  var pendingUpdates = {}; // id -> { client, contact, phone }
   var addingNew = false;
   var searchQuery = '';
   var sortField = 'contact';
@@ -9,6 +10,7 @@
   var tbody = document.getElementById('customers-tbody');
   var searchInput = document.getElementById('customers-search');
   var btnAdd = document.getElementById('btn-add-customer');
+  var btnSave = document.getElementById('btn-save-customers');
 
   function esc(str) {
     return String(str == null ? '' : str)
@@ -16,6 +18,12 @@
       .replace(/</g, '&lt;')
       .replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;');
+  }
+
+  function get(id, field, fallback) {
+    return pendingUpdates[id] && Object.prototype.hasOwnProperty.call(pendingUpdates[id], field)
+      ? pendingUpdates[id][field]
+      : fallback;
   }
 
   // ── Sort ──────────────────────────────────────────────────────────
@@ -37,6 +45,18 @@
         ? (sortDir === 'asc' ? ' ↑' : ' ↓')
         : '';
     });
+  }
+
+  // ── Save button ───────────────────────────────────────────────────
+
+  function updateSaveButton() {
+    var count = Object.keys(pendingUpdates).length;
+    if (count > 0) {
+      btnSave.style.display = '';
+      btnSave.textContent = 'Save ' + count + ' change' + (count !== 1 ? 's' : '');
+    } else {
+      btnSave.style.display = 'none';
+    }
   }
 
   // ── Render ────────────────────────────────────────────────────────
@@ -69,17 +89,20 @@
 
     for (var i = 0; i < filtered.length; i++) {
       var c = filtered[i];
+      var dirty = !!pendingUpdates[c.id];
+      var client = get(c.id, 'client', c.client);
+      var contact = get(c.id, 'contact', c.contact);
+      var phone = get(c.id, 'phone', c.phone);
       html +=
-        '<tr data-id="' + c.id + '">' +
-        '<td><strong>' + esc(c.client) + '</strong></td>' +
-        '<td>' + esc(c.contact || '—') + '</td>' +
-        '<td>' + esc(c.phone || '—') + '</td>' +
-        '<td><button class="pdash-delete-btn" data-id="' + c.id + '" title="Delete">&#x2715;</button></td>' +
+        '<tr class="' + (dirty ? 'is-modified' : '') + '" data-id="' + c.id + '">' +
+        '<td><input class="pdash-cell-input" type="text" value="' + esc(client) + '" data-field="client" placeholder="Client / business name" autocomplete="off"></td>' +
+        '<td><input class="pdash-cell-input" type="text" value="' + esc(contact) + '" data-field="contact" placeholder="Contact person" autocomplete="off"></td>' +
+        '<td><input class="pdash-cell-input" type="tel" value="' + esc(phone) + '" data-field="phone" placeholder="Phone" autocomplete="off"></td>' +
         '</tr>';
     }
 
     if (!addingNew && filtered.length === 0) {
-      html = '<tr><td colspan="4" class="pdash-empty">' +
+      html = '<tr><td colspan="3" class="pdash-empty">' +
         (allCustomers.length === 0 ? 'No customers yet. Click "+ Add Customer" to create the first one.' : 'No customers match your search.') +
         '</td></tr>';
     }
@@ -92,10 +115,8 @@
   // ── Listeners ─────────────────────────────────────────────────────
 
   function attachListeners() {
-    tbody.querySelectorAll('.pdash-delete-btn').forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        deleteCustomer(parseInt(this.dataset.id));
-      });
+    tbody.querySelectorAll('[data-field]').forEach(function (input) {
+      input.addEventListener('input', onCellInput);
     });
 
     var confirmBtn = document.getElementById('confirm-add-customer');
@@ -114,6 +135,21 @@
       var clientInput = document.getElementById('new-client');
       if (clientInput) setTimeout(function () { clientInput.focus(); }, 0);
     }
+  }
+
+  function onCellInput() {
+    var row = this.closest('tr');
+    var id = parseInt(row.dataset.id);
+    var field = this.dataset.field;
+
+    if (!pendingUpdates[id]) {
+      var c = allCustomers.find(function (c) { return c.id === id; });
+      pendingUpdates[id] = { client: c.client, contact: c.contact, phone: c.phone };
+    }
+
+    pendingUpdates[id][field] = this.value;
+    row.classList.add('is-modified');
+    updateSaveButton();
   }
 
   // ── Add ───────────────────────────────────────────────────────────
@@ -174,35 +210,67 @@
     }
   }
 
-  // ── Delete ────────────────────────────────────────────────────────
+  // ── Save edits ────────────────────────────────────────────────────
 
-  async function deleteCustomer(id) {
-    if (!window.confirm('Remove this customer from the directory?')) return;
-    var existing = allCustomers.find(function (c) { return c.id === id; });
-    try {
-      var result = await db.from('customers').delete().eq('id', id);
-      if (result.error) throw result.error;
-      allCustomers = allCustomers.filter(function (c) { return c.id !== id; });
-      render();
+  async function save() {
+    var ids = Object.keys(pendingUpdates);
+    if (!ids.length) return;
 
-      window.MVB_AUDIT_LOG.log({
-        module: 'Customers',
-        action: 'Delete',
-        recordType: 'Customer',
-        recordId: id,
-        description: (window.MVB_USER ? window.MVB_USER.name : 'Someone') + ' deleted Customer "' + (existing ? existing.client : id) + '".',
-        oldData: existing,
+    btnSave.disabled = true;
+    btnSave.textContent = 'Saving…';
+
+    var results = await Promise.all(
+      ids.map(function (id) {
+        return db.from('customers').update(pendingUpdates[parseInt(id)]).eq('id', parseInt(id));
+      })
+    );
+
+    var hasError = results.some(function (r) { return r && r.error; });
+
+    if (!hasError) {
+      ids.forEach(function (id) {
+        var numId = parseInt(id);
+        var idx = allCustomers.findIndex(function (c) { return c.id === numId; });
+        var oldData = idx !== -1 ? Object.assign({}, allCustomers[idx]) : null;
+        var newFields = pendingUpdates[numId];
+        if (idx !== -1) Object.assign(allCustomers[idx], newFields);
+
+        var changed = Object.keys(newFields).filter(function (field) {
+          return !oldData || oldData[field] !== newFields[field];
+        });
+        var customerName = (idx !== -1 ? allCustomers[idx].client : null) || (oldData && oldData.client) || numId;
+
+        var trimmedOld = {}, trimmedNew = {};
+        changed.forEach(function (field) {
+          trimmedOld[field] = oldData ? oldData[field] : null;
+          trimmedNew[field] = newFields[field];
+        });
+
+        window.MVB_AUDIT_LOG.log({
+          module: 'Customers',
+          action: 'Update',
+          recordType: 'Customer',
+          recordId: numId,
+          description: (window.MVB_USER ? window.MVB_USER.name : 'Someone') + ' updated ' + (changed.join(', ') || 'fields') + ' of Customer "' + customerName + '".',
+          oldData: changed.length ? trimmedOld : null,
+          newData: changed.length ? trimmedNew : null,
+        });
       });
-    } catch (err) {
-      console.error('Failed to delete customer:', err);
-      window.alert('Could not remove customer. Please try again.');
+      pendingUpdates = {};
     }
+
+    btnSave.disabled = false;
+    btnSave.textContent = hasError ? 'Error — try again' : 'Saved!';
+    setTimeout(function () {
+      if (!hasError) render();
+      updateSaveButton();
+    }, 1200);
   }
 
   // ── Load ──────────────────────────────────────────────────────────
 
   async function loadCustomers() {
-    tbody.innerHTML = '<tr><td colspan="4" class="pdash-empty">Loading…</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="3" class="pdash-empty">Loading…</td></tr>';
     try {
       var result = await db.from('customers').select('*').order('contact');
       if (result.error) throw result.error;
@@ -210,7 +278,7 @@
       render();
     } catch (err) {
       console.error('Failed to load customers:', err);
-      tbody.innerHTML = '<tr><td colspan="4" class="pdash-empty">Could not load customers. Please refresh.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="3" class="pdash-empty">Could not load customers. Please refresh.</td></tr>';
     }
   }
 
@@ -222,6 +290,8 @@
     btnAdd.disabled = true;
     render();
   });
+
+  btnSave.addEventListener('click', save);
 
   searchInput.addEventListener('input', function () {
     searchQuery = this.value;
