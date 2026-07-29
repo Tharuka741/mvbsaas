@@ -23,7 +23,7 @@
     client: 'Client', contact: 'Contact', phone: 'Phone',
     name: 'Name', supplier: 'Supplier',
     unit_cost: 'Unit Cost', unit_price: 'Unit Price', variant_price: 'Variant Price',
-    stock_quantity: 'Stock Quantity',
+    stock_quantity: 'Stock Quantity', note: 'Note',
     supplier_name: 'Supplier', reference: 'Reference', order_date: 'Order Date',
     net_total: 'Net Total', total_quantity: 'Total Quantity', vat_enabled: 'VAT Enabled',
     grn_id: 'GRN ID', supplier_order_id: 'Supplier Order ID', status: 'Status',

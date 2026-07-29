@@ -184,6 +184,20 @@
     var ids = Object.keys(pendingChanges).map(Number);
     if (!ids.length) return;
 
+    var note = window.prompt(
+      'Please enter a note explaining why you\'re changing ' +
+        (ids.length === 1 ? 'this stock quantity' : 'these stock quantities') + ':'
+    );
+    if (note === null) return; // user cancelled
+    note = note.trim();
+    if (!note) {
+      window.alert('A note is required before saving stock quantity changes.');
+      return;
+    }
+    if (!window.confirm('Save ' + ids.length + ' stock change' + (ids.length !== 1 ? 's' : '') + ' with note: "' + note + '"?')) {
+      return;
+    }
+
     saveAllBtn.disabled    = true;
     saveAllBtn.textContent = 'Saving…';
 
@@ -207,9 +221,9 @@
           recordType: 'Product',
           recordId: productId,
           description: (window.MVB_USER ? window.MVB_USER.name : 'Someone') + ' updated stock quantity of Product "' +
-            (prod ? prod.name : productId) + '" from ' + oldQty + ' to ' + newQty + '.',
+            (prod ? prod.name : productId) + '" from ' + oldQty + ' to ' + newQty + '. Note: ' + note,
           oldData: { stock_quantity: oldQty },
-          newData: { stock_quantity: newQty },
+          newData: { stock_quantity: newQty, note: note },
         });
 
         // Update the input's original marker and clear dirty state without full re-render
