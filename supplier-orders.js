@@ -25,6 +25,7 @@ supplierDirectory.products.forEach((record) => {
   productsBySupplier.get(catalogSupplier).push({
     product: record.product,
     unitCost: Number(record.unitCost),
+    variantCost: record.variantCost != null ? Number(record.variantCost) : null,
   });
 });
 
@@ -104,6 +105,7 @@ function createSupplierLineItem(partial = {}) {
     productName: partial.productName || "",
     quantity: partial.quantity ?? "1",
     foc: partial.foc ?? "0",
+    selectedCost: null, // null = use standard unitCost
   };
 }
 
@@ -204,6 +206,11 @@ function isSupplierVatEnabled() {
   return Boolean(refs.supplierVatEnabled.checked);
 }
 
+function getEffectiveCost(lineItem, product) {
+  if (!product) return 0;
+  return lineItem.selectedCost != null ? lineItem.selectedCost : product.unitCost;
+}
+
 function getSupplierLineDetails(lineItem) {
   const productLookup = getCurrentProductLookup();
   const product = productLookup.get(lineItem.productName);
@@ -214,13 +221,14 @@ function getSupplierLineDetails(lineItem) {
   }
 
   const foc = Math.max(0, parseInt(lineItem.foc, 10) || 0);
-  const subtotal = roundCurrency(product.unitCost * quantity);
+  const unitCost = getEffectiveCost(lineItem, product);
+  const subtotal = roundCurrency(unitCost * quantity);
   const vat = roundCurrency(subtotal * (isSupplierVatEnabled() ? VAT_RATE : 0));
   const net = roundCurrency(subtotal + vat);
 
   return {
     productName: product.product,
-    unitCost: product.unitCost,
+    unitCost,
     quantity,
     foc,
     subtotal,
@@ -322,6 +330,7 @@ function renderSupplierLineItems() {
   refs.supplierLineItems.innerHTML = state.lineItems
     .map((lineItem, index) => {
       const lineDetails = getSupplierLineDetails(lineItem);
+      const product = getCurrentProductLookup().get(lineItem.productName);
       const productOptions = [
         `<option value="">${
           availableProducts.length ? "Select a product" : "Choose a supplier first"
@@ -345,11 +354,13 @@ function renderSupplierLineItems() {
 
           <label class="field">
             <span>Unit Cost</span>
-            <input
-              type="text"
-              value="${lineDetails ? formatAmount(lineDetails.unitCost) : "--"}"
-              readonly
-            />
+            ${product && product.variantCost != null
+              ? `<select data-field="cost">
+                  <option value="${product.unitCost}" ${lineItem.selectedCost == null || lineItem.selectedCost === product.unitCost ? 'selected' : ''}>Standard — LKR ${formatAmount(product.unitCost)}</option>
+                  <option value="${product.variantCost}" ${lineItem.selectedCost === product.variantCost ? 'selected' : ''}>Variant — LKR ${formatAmount(product.variantCost)}</option>
+                </select>`
+              : `<input type="text" value="${lineDetails ? formatAmount(lineDetails.unitCost) : "--"}" readonly />`
+            }
           </label>
 
           <label class="field">
@@ -797,6 +808,13 @@ refs.supplierLineItems.addEventListener("change", (event) => {
 
   if (event.target.matches('[data-field="product"]')) {
     lineItem.productName = event.target.value;
+    lineItem.selectedCost = null;
+    syncSupplierUi();
+    return;
+  }
+
+  if (event.target.matches('[data-field="cost"]')) {
+    lineItem.selectedCost = parseFloat(event.target.value);
     syncSupplierUi();
   }
 });

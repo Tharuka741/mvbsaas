@@ -24,14 +24,19 @@
       suppliers: Object.keys(supplierSet).sort(),
       supplierAliases: {},
       products: supRows.map(function (r) {
-        return { supplier: r.supplier, product: r.name, unitCost: Number(r.unit_cost) };
+        return {
+          supplier: r.supplier,
+          product: r.name,
+          unitCost: Number(r.unit_cost),
+          variantCost: r.variant_cost != null ? Number(r.variant_cost) : null,
+        };
       }),
       missingUnitCosts: [],
     };
   }
 
   async function initProducts() {
-    var result = await db.from('products').select('id, supplier, name, unit_cost, unit_price, variant_price');
+    var result = await db.from('products').select('id, supplier, name, unit_cost, unit_price, variant_price, variant_cost');
     if (result.error || !result.data) return;
     if (result.data.length > 0) applyToGlobals(result.data);
   }

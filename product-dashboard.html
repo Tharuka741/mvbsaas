@@ -126,6 +126,7 @@
                   <th class="pdash-th-sort" data-sort="supplier">Supplier <span class="pdash-sort-icon"></span></th>
                   <th class="pdash-th-sort" data-sort="name">Product <span class="pdash-sort-icon"></span></th>
                   <th class="pdash-th-sort" data-sort="unit_cost">Cost (Rs.) <span class="pdash-sort-icon"></span></th>
+                  <th>Variant Cost (Rs.)</th>
                   <th class="pdash-th-sort" data-sort="unit_price">Price (Rs.) <span class="pdash-sort-icon"></span></th>
                   <th>Variant Price (Rs.)</th>
                   <th></th>
@@ -236,6 +237,7 @@
               '<td><select class="pdash-cell-input" id="new-supplier">' + supplierOptions + '</select></td>' +
               '<td><input class="pdash-cell-input" id="new-name" type="text" placeholder="Product name *" autocomplete="off"></td>' +
               '<td><input class="pdash-cell-input pdash-cell-input--num" id="new-cost" type="number" min="0" step="0.01" placeholder="—"></td>' +
+              '<td><input class="pdash-cell-input pdash-cell-input--num" id="new-variant-cost" type="number" min="0" step="0.01" placeholder="—"></td>' +
               '<td><input class="pdash-cell-input pdash-cell-input--num" id="new-price" type="number" min="0" step="0.01" placeholder="—"></td>' +
               '<td><input class="pdash-cell-input pdash-cell-input--num" id="new-variant-price" type="number" min="0" step="0.01" placeholder="—"></td>' +
               '<td><div class="pdash-row-actions">' +
@@ -263,6 +265,7 @@
             var cost = get(p.id, 'unit_cost', p.unit_cost);
             var price = get(p.id, 'unit_price', p.unit_price);
             var variantPrice = get(p.id, 'variant_price', p.variant_price);
+            var variantCost = get(p.id, 'variant_cost', p.variant_cost);
 
             var supplierOpts = '<option value="">—</option>' +
               allSuppliers.map(function (s) {
@@ -279,6 +282,7 @@
               '<td><select class="pdash-cell-input" data-field="supplier"' + dis + '>' + supplierOpts + '</select></td>' +
               '<td><input class="pdash-cell-input" type="text" value="' + esc(name) + '" data-field="name" placeholder="Product name" autocomplete="off"' + dis + '></td>' +
               '<td><input class="pdash-cell-input pdash-cell-input--num" type="number" min="0" step="0.01" value="' + fmt(cost) + '" data-field="unit_cost" placeholder="—"' + dis + '></td>' +
+              '<td><input class="pdash-cell-input pdash-cell-input--num" type="number" min="0" step="0.01" value="' + fmt(variantCost) + '" data-field="variant_cost" placeholder="—"' + dis + '></td>' +
               '<td><input class="pdash-cell-input pdash-cell-input--num" type="number" min="0" step="0.01" value="' + fmt(price) + '" data-field="unit_price" placeholder="—"' + dis + '></td>' +
               '<td><input class="pdash-cell-input pdash-cell-input--num" type="number" min="0" step="0.01" value="' + fmt(variantPrice) + '" data-field="variant_price" placeholder="—"' + dis + '></td>' +
               '<td>' + (readOnly ? '' : '<button class="pdash-delete-btn" data-id="' + p.id + '" title="Delete">&#x2715;</button>') + '</td>' +
@@ -286,7 +290,7 @@
           }
 
           if (!addingNew && filtered.length === 0) {
-            html = '<tr><td colspan="6" class="pdash-empty">No products found.</td></tr>';
+            html = '<tr><td colspan="7" class="pdash-empty">No products found.</td></tr>';
           }
 
           tbody.innerHTML = html;
@@ -337,6 +341,7 @@
               unit_cost: p.unit_cost,
               unit_price: p.unit_price,
               variant_price: p.variant_price,
+              variant_cost: p.variant_cost,
             };
           }
 
@@ -377,12 +382,14 @@
           var priceVal = document.getElementById('new-price').value;
 
           var variantPriceVal = document.getElementById('new-variant-price').value;
+          var variantCostVal = document.getElementById('new-variant-cost').value;
           var result = await db.from('products').insert([{
             supplier: supplier,
             name: name,
             unit_cost: costVal ? parseFloat(costVal) : null,
             unit_price: priceVal ? parseFloat(priceVal) : null,
             variant_price: variantPriceVal ? parseFloat(variantPriceVal) : null,
+            variant_cost: variantCostVal ? parseFloat(variantCostVal) : null,
           }]).select();
 
           if (result.error) { alert('Failed to add product. Please try again.'); return; }
@@ -523,7 +530,7 @@
 
         // ── Init ──────────────────────────────────────────────────
 
-        tbody.innerHTML = '<tr><td colspan="6" class="pdash-empty">Loading…</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="7" class="pdash-empty">Loading…</td></tr>';
 
         loadSuppliers();
 
@@ -534,7 +541,7 @@
             .order('name')
             .then(function (result) {
               if (result.error || !result.data) {
-                tbody.innerHTML = '<tr><td colspan="6" class="pdash-empty">Failed to load. Please refresh.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="7" class="pdash-empty">Failed to load. Please refresh.</td></tr>';
                 return;
               }
               allProducts = result.data;

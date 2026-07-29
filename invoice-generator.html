@@ -120,7 +120,11 @@
               <div class="field-grid field-grid--two">
                 <label class="field">
                   <span>Invoice Number</span>
-                  <input id="invoice-number" type="text" placeholder="MED/260429-001" />
+                  <div class="field-prefix-group">
+                    <span class="field-prefix-group__prefix">MED/</span>
+                    <input id="invoice-number" type="text" inputmode="numeric" pattern="[0-9]*" placeholder="00000" />
+                  </div>
+                  <small id="invoice-number-warning" class="field-warning">Already in use.</small>
                 </label>
 
                 <label class="field">
